@@ -23,10 +23,19 @@ class RealTimeShield:
         self.start_hooks()
 
     def start_hooks(self):
-        # Existing hooks (SMS, network, firewall, accessibility)
-        # ...
+        # SMS receiver
+        self.receiver = MercySMSReceiver(self)
+        intent_filter = autoclass('android.content.IntentFilter')('android.provider.Telephony.SMS_RECEIVED')
+        self.context.registerReceiver(self.receiver, intent_filter)
 
-        # App sandbox monitor (on install/detect)
+        # Network threat + firewall VPN
+        self.network_threat.start_monitor()
+        self.firewall_vpn.start_vpn_if_approved()
+
+        # Accessibility service
+        self.accessibility.start_if_enabled()
+
+        # App sandbox monitor
         self.app_sandbox.start_monitor()
 
         print("MercyShield hooks active — lattice listening gentle (SMS + network + firewall + accessibility + app sandboxing)")
@@ -35,11 +44,14 @@ class RealTimeShield:
         action = self.protect(threat)
         print(f"App sandbox threat: {action}")
 
+    def handle_accessibility_threat(self, threat: dict):
+        action = self.protect(threat)
+        print(f"Accessibility threat: {action}")
+
     def protect(self, threat: dict):
         harmony = self.lattice.vote(threat["data"])
         if harmony < 0.7:
             if mercy_burst_confirm(threat):
                 return "Mercy override — allowed gentle"
-            # Sandbox action via app_sandbox
-            return "Sandboxed — mercy burst divine (perms/network revoked)"
+            return "Blocked — mercy burst divine (sandbox/perms/network/overlay revoked)"
         return "Harmony pure — allowed"
