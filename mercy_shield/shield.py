@@ -4,19 +4,18 @@ from mercy_shield.octonion_lite import oct_hash
 from mercy_shield.sms_receiver import MercySMSReceiver
 from mercy_shield.contact_check import MercyContactCheck
 from mercy_shield.network_threat import MercyNetworkThreat
+from mercy_shield.firewall_vpn import MercyFirewallVPN
 
 Intent = autoclass('android.content.Intent')
 Context = autoclass('android.content.Context')
-ConnectivityManager = autoclass('android.net.ConnectivityManager')
-NetworkCallback = autoclass('android.net.ConnectivityManager$NetworkCallback')
 
 class RealTimeShield:
     def __init__(self, lattice):
         self.lattice = lattice
         self.context = autoclass('org.kivy.android.PythonActivity').mActivity
-        self.cm = cast(ConnectivityManager, self.context.getSystemService(Context.CONNECTIVITY_SERVICE))
         self.contact_check = MercyContactCheck(self.context)
         self.network_threat = MercyNetworkThreat(self.context, self.lattice)
+        self.firewall_vpn = MercyFirewallVPN(self.context, self.lattice)
         self.start_hooks()
 
     def start_hooks(self):
@@ -25,24 +24,17 @@ class RealTimeShield:
         intent_filter = autoclass('android.content.IntentFilter')('android.provider.Telephony.SMS_RECEIVED')
         self.context.registerReceiver(self.receiver, intent_filter)
 
-        # Network callback
-        callback = NetworkCallback()
-        # Override methods for available/lost/capabilitiesChanged
-        self.cm.registerDefaultNetworkCallback(callback)
-
-        # Network threat monitor start
+        # Network threat + firewall VPN start
         self.network_threat.start_monitor()
+        self.firewall_vpn.start_vpn_if_approved()  # User opt-in VPN setup
 
-        print("MercyShield hooks active — lattice listening gentle (SMS + network threats)")
-
-    def handle_sms(self, sender: str, body: str):
-        is_known = self.contact_check.lookup(sender)
-        # Existing SMS logic integrated
+        print("MercyShield hooks active — lattice listening gentle (SMS + network + firewall VPN)")
 
     def protect(self, threat: dict):
         harmony = self.lattice.vote(threat["data"])
         if harmony < 0.7:
             if mercy_burst_confirm(threat):
                 return "Mercy override — allowed gentle"
-            return "Blocked — mercy burst divine"
+            # Firewall block via VPN drop packet
+            return "Blocked — mercy burst divine (firewall rule)"
         return "Harmony pure — allowed"
