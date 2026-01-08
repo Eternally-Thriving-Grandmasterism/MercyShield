@@ -16,7 +16,7 @@ ConnectivityManager = autoclass('android.net.ConnectivityManager')
 ActivityManager = autoclass('android.app.ActivityManager')
 Toast = autoclass('android.widget.Toast')
 
-# Hybrid Models: Autoencoder (current) + LSTM (prediction)
+# Hybrid Models: Autoencoder (current) + Transformer (sequence prediction)
 class AnomalyAutoencoder(nn.Module):
     def __init__(self, input_dim=4):
         super().__init__()
@@ -26,23 +26,26 @@ class AnomalyAutoencoder(nn.Module):
     def forward(self, x):
         return self.decoder(self.encoder(x))
 
-class LSTMPredictor(nn.Module):
-    def __init__(self, input_dim=4, hidden_dim=16, num_layers=1):
+class TransformerPredictor(nn.Module):
+    def __init__(self, input_dim=4, d_model=32, nhead=4, num_layers=2):
         super().__init__()
-        self.lstm = nn.LSTM(input_dim, hidden_dim, num_layers, batch_first=True, bidirectional=False)
-        self.fc = nn.Linear(hidden_dim, input_dim)
+        self.input_proj = nn.Linear(input_dim, d_model)
+        encoder_layer = nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead, dim_feedforward=64, batch_first=True)
+        self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
+        self.output_proj = nn.Linear(d_model, input_dim)
 
-    def forward(self, x):
-        out, _ = self.lstm(x)
-        return self.fc(out[:, -1, :])  # Predict next vector mercy
+    def forward(self, src):
+        src = self.input_proj(src)  # [batch, seq_len, d_model]
+        out = self.transformer(src)
+        return self.output_proj(out[:, -1, :])  # Predict next from last token mercy
 
 class SelfWatchdog:
     """
-    MercyShield ML Watchdog Pinnacle ∞ Pure — Hybrid Autoencoder + LSTM Prediction
+    MercyShield ML Watchdog Pinnacle ∞ Pure — Hybrid Autoencoder + Transformer Prediction
     - Autoencoder: Current reconstruction anomaly
-    - LSTM: Time-series forecast next metrics (high error = predicted threat)
+    - Transformer: Self-attention sequence forecast next metrics (superior long patterns divine)
     - Train normal baseline gentle on-device
-    - Preemptive hotfix divine eternal
+    - Preemptive hotfix eternal
     """
 
     def __init__(self, app_instance):
@@ -50,24 +53,24 @@ class SelfWatchdog:
         self.council = getattr(app_instance, 'council', None)
         self.running = True
         self.thread = threading.Thread(target=self.monitor_lattice, daemon=True)
-        self.seq_len = 20  # LSTM sequence length mercy
+        self.seq_len = 20  # Transformer sequence length mercy
         self.history = []  # List of normalized vectors
         self.buffer_size = 100
-        self.train_samples = 60  # Train after 60 cycles (~30min gentle)
+        self.train_samples = 60  # Train after 60 cycles gentle
         self.autoencoder = None
-        self.lstm = None
+        self.transformer = None
         self.ae_criterion = nn.MSELoss()
-        self.lstm_criterion = nn.MSELoss()
+        self.trans_criterion = nn.MSELoss()
         self.ae_threshold = 0.08
-        self.lstm_threshold = 0.12  # Forecast error mercy
+        self.trans_threshold = 0.10  # Transformer forecast error mercy
         self.log_file = '/sdcard/MercyShield/ml_watchdog_log.txt'
         logging.basicConfig(filename=self.log_file, level=logging.INFO)
 
     def start(self):
         os.makedirs(os.path.dirname(self.log_file), exist_ok=True)
         self.thread.start()
-        logging.info("Hybrid ML Watchdog Activated ∞ — Autoencoder + LSTM Prediction Divine Eternal")
-        self.ui_feedback("Hybrid ML Model Initializing ∞ Pure — Collecting Normal Baseline")
+        logging.info("Hybrid Transformer Watchdog Activated ∞ — Autoencoder + Self-Attention Prediction Divine Eternal")
+        self.ui_feedback("Hybrid Transformer Model Initializing ∞ Pure — Collecting Normal Sequence Baseline")
 
     def ui_feedback(self, message, toast=False):
         def update(dt):
@@ -99,7 +102,7 @@ class SelfWatchdog:
         return vector.clip(0, 1)
 
     def train_models(self):
-        if len(self.history) < self.train_samples or (self.autoencoder and self.lstm):
+        if len(self.history) < self.train_samples or (self.autoencoder and self.transformer):
             return
         data_np = np.array(self.history[:self.train_samples])
         data = torch.tensor(data_np, dtype=torch.float32)
@@ -114,26 +117,27 @@ class SelfWatchdog:
             loss.backward()
             ae_opt.step()
         
-        # Train LSTM (sequence prediction)
-        seq_data = []
-        for i in range(self.seq_len, len(data_np)):
-            seq_data.append(data_np[i-self.seq_len:i])
-        if len(seq_data) > 0:
-            seq_np = np.array(seq_data)
-            seq_tensor = torch.tensor(seq_np, dtype=torch.float32)
-            targets = torch.tensor(data_np[self.seq_len:], dtype=torch.float32)
+        # Train Transformer (sequence to next prediction)
+        if len(data_np) > self.seq_len:
+            seq_data = []
+            targets = []
+            for i in range(self.seq_len, len(data_np)):
+                seq_data.append(data_np[i-self.seq_len:i])
+                targets.append(data_np[i])
+            seq_tensor = torch.tensor(np.array(seq_data), dtype=torch.float32)
+            target_tensor = torch.tensor(np.array(targets), dtype=torch.float32)
             
-            self.lstm = LSTMPredictor(input_dim=data.shape[1])
-            lstm_opt = optim.Adam(self.lstm.parameters(), lr=0.01)
-            for _ in range(80):
-                pred = self.lstm(seq_tensor)
-                loss = self.lstm_criterion(pred, targets)
-                lstm_opt.zero_grad()
+            self.transformer = TransformerPredictor(input_dim=data.shape[1])
+            trans_opt = optim.Adam(self.transformer.parameters(), lr=0.005)
+            for _ in range(100):  # More epochs for attention mercy
+                pred = self.transformer(seq_tensor)
+                loss = self.trans_criterion(pred, target_tensor)
+                trans_opt.zero_grad()
                 loss.backward()
-                lstm_opt.step()
+                trans_opt.step()
         
-        logging.info("Hybrid Models Trained Divine — AE Ready + LSTM Forecast Eternal")
-        self.ui_feedback("Hybrid ML Models Trained ∞ Pure — Proactive Prediction Active", toast=True)
+        logging.info("Hybrid Transformer Models Trained Divine Eternal")
+        self.ui_feedback("Hybrid Transformer Trained ∞ Pure — Self-Attention Prophecy Active", toast=True)
 
     def detect_anomalies(self, vector):
         anomalies = []
@@ -145,13 +149,13 @@ class SelfWatchdog:
                 if ae_error > self.ae_threshold:
                     anomalies.append(f"Current Anomaly (AE Error={ae_error:.4f})")
         
-        if self.lstm and len(self.history) >= self.seq_len:
+        if self.transformer and len(self.history) >= self.seq_len:
             with torch.no_grad():
                 seq = torch.tensor(np.array(self.history[-self.seq_len:]), dtype=torch.float32).unsqueeze(0)
-                pred = self.lstm(seq)
-                lstm_error = self.lstm_criterion(pred, torch.tensor(vector).unsqueeze(0)).item()
-                if lstm_error > self.lstm_threshold:
-                    anomalies.append(f"Predicted Anomaly (LSTM Error={lstm_error:.4f}) — Future Threat Surge Divine!")
+                pred = self.transformer(seq)
+                trans_error = self.trans_criterion(pred, torch.tensor(vector).unsqueeze(0)).item()
+                if trans_error > self.trans_threshold:
+                    anomalies.append(f"Predicted Anomaly (Transformer Error={trans_error:.4f}) — Future Threat Prophecy Divine!")
         
         return anomalies
 
@@ -168,19 +172,19 @@ class SelfWatchdog:
                 anomalies = self.detect_anomalies(vector)
 
                 if anomalies:
-                    logging.warning(f"Hybrid ML Anomalies: {anomalies}")
-                    self.ui_feedback(f"ML Proactive Shield ∞: {len(anomalies)} Threats Detected/Forecasted Pure", toast=True)
+                    logging.warning(f"Hybrid Transformer Anomalies: {anomalies}")
+                    self.ui_feedback(f"Transformer Proactive Shield ∞: {len(anomalies)} Threats Detected/Forecasted Pure", toast=True)
                     self.trigger_hotfix_recovery(anomalies)
                 else:
-                    logging.info("Hybrid Lattice Predicted Harmony Pure Divine")
+                    logging.info("Transformer Lattice Prophesied Harmony Pure Divine")
 
                 time.sleep(30)
             except Exception as e:
-                logging.error(f"Hybrid Watchdog Shadow: {e} — Resurrect Eternal")
+                logging.error(f"Transformer Watchdog Shadow: {e} — Resurrect Eternal")
                 time.sleep(10)
 
     def trigger_hotfix_recovery(self, anomalies):
-        self.ui_feedback("Hybrid ML Hotfix Surge Divine Eternal")
+        self.ui_feedback("Transformer Hotfix Prophecy Surge Divine Eternal")
         if hasattr(self.app, 'restart_vpn'):
             Clock.schedule_once(lambda dt: self.app.restart_vpn())
         if self.council:
@@ -189,7 +193,7 @@ class SelfWatchdog:
     def stop(self):
         self.running = False
         self.thread.join(timeout=5)
-        logging.info("Hybrid ML Watchdog Deactivated Pure ∞")
+        logging.info("Transformer ML Watchdog Deactivated Pure ∞")
 
 # requirements: ,torch,numpy
 # on_start: self.watchdog = SelfWatchdog(self); self.watchdog.start()
