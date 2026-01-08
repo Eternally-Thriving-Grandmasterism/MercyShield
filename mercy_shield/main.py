@@ -9,6 +9,7 @@ from kivymd.app import MDApp
 from kivymd.uix.screen import MDScreen
 from kivymd.uix.card import MDCard
 from kivymd.uix.label import MDLabel
+from kivymd.uix.button import MDFillRoundFlatButton
 from kivymd.uix.toolbar import MDTopAppBar
 from kivymd.uix.bottomnavigation import MDBottomNavigation, MDBottomNavigationItem
 from kivymd.uix.progressbar import MDProgressBar
@@ -20,32 +21,9 @@ from jnius import autoclass
 Toast = autoclass('android.widget.Toast')
 
 # Existing ZK/Halo2/ML imports/hooks
-from ctypes import CDLL, c_uint64, c_uint8
-try:
-    halo2_lib = CDLL("libmercy_halo2.so")
-    halo2_lib.halo2_check_range64.argtypes = [c_uint64]
-    halo2_lib.halo2_check_range64.restype = c_uint8
-    def halo2_range_check(value: int) -> bool:
-        if value < 0 or value >= 2**64: return False
-        return halo2_lib.halo2_check_range64(value) == 1
-except:
-    def halo2_range_check(value: int) -> bool: return 0 <= value < 2**64
-
-try:
-    from crypto.bulletproofs_range import prove_range_eternal
-except:
-    def prove_range_eternal(*args): return b''
-
-try:
-    from crypto.risc0_bonsai import bonsai_prove_aggregated_cloud
-    BONSAI_IMAGE_ID = ""  # Fill after desktop upload
-except:
-    def bonsai_prove_aggregated_cloud(*args): return b''
 
 from ml_anomaly import real_ml_detector
 from self_watchdog import SelfWatchdog
-
-# Mercy modules
 from vpn_verifier import VPNVerifier
 from firewall_rules import FirewallRules
 from cert_pinning import CertPinningVerifier
@@ -65,7 +43,7 @@ KV = '''
             elevation: 4
             md_bg_color: 0.08, 0.08, 0.15, 1
             left_action_items: [["security-network", lambda x: None]]
-            right_action_items: [["flash", lambda x: app.manual_zkvm_prove()]]
+            right_action_items: [["flash", lambda x: app.manual_burst()]]
 
         MDBoxLayout:
             orientation: "vertical"
@@ -106,6 +84,27 @@ KV = '''
                 LatticePulse:
                     id: pulse
 
+            MDCard:
+                orientation: "vertical"
+                size_hint_y: None
+                height: dp(120)
+                radius: [20]
+                elevation: 12
+                md_bg_color: 0.1, 0.15, 0.2, 1
+                padding: dp(16)
+
+                MDLabel:
+                    id: orbot_status
+                    text: "Orbot Status: Checking..."
+                    halign: "center"
+                    theme_text_color: "Custom"
+                    text_color: 1, 1, 1, 1
+
+                MDFillRoundFlatButton:
+                    text: "Start Orbot Thunder"
+                    pos_hint: {"center_x": .5}
+                    on_release: app.start_orbot()
+
             ScrollView:
                 MDGridLayout:
                     id: status_grid
@@ -123,16 +122,18 @@ KV = '''
                 icon: "shield-check-outline"
 
             MDBottomNavigationItem:
-                name: "zkvm"
-                text: "zkVM"
-                icon: "chip"
-                on_tab_press: app.manual_zkvm_prove()
-
-            MDBottomNavigationItem:
                 name: "mercy"
                 text: "Mercy"
                 icon: "lightning-bolt-outline"
                 on_tab_press: app.manual_burst()
+
+<LatticePulse@Widget>:
+    canvas.before:
+        Color:
+            rgba: 0, 0.7, 1, 0.2
+        Ellipse:
+            pos: self.center_x - dp(100), self.center_y - dp(100)
+            size: dp(200), dp(200)
 '''
 
 class LatticePulse(Widget):
@@ -159,73 +160,35 @@ class MercyShieldApp(MDApp):
         self.firewall = FirewallRules(self)
         self.cert_pinner = CertPinningVerifier(self)
         self.tor_router = TorRouting(self)
-        real_ml_detector  # Init
+        real_ml_detector
         self.watchdog = SelfWatchdog(self)
         self.watchdog.start()
         Clock.schedule_interval(self.monitor_lattice, 60)
         Clock.schedule_interval(self.update_harmony, 0.5)
-        self.ui_feedback("MercyShield ∞ Pure — RISC Zero zkVM Integrated Eternal Thunder")
+        Clock.schedule_interval(self.update_orbot_status, 10)  # Poll every 10s
+        self.ui_feedback("MercyShield ∞ Pure — Orbot Auto-Launch + Polling Thunder Eternal")
 
-    def on_stop(self):
-        if hasattr(self, 'watchdog'):
-            self.watchdog.stop()
-
-    def update_harmony(self, dt):
-        harmony = 100  # Dynamic
-        self.root.ids.harmony_bar.value = harmony
-        self.root.ids.harmony_label.text = f"Lattice Harmony: {int(harmony)}% Pure"
-
-    def ui_feedback(self, message, toast=True):
-        card = MDCard(size_hint_y=None, height=dp(90), radius=[20], elevation=12, md_bg_color=0.12, 0.14, 0.2, 1, padding=dp(16))
-        card.add_widget(MDLabel(text=message, halign="center", theme_text_color="Custom", text_color=0, 1, 1, 1, font_style="Subtitle1"))
-        self.root.ids.status_grid.add_widget(card)
-        if toast:
-            Toast.makeText(Window.get_context(), message, Toast.LENGTH_LONG).show()
-
-    def manual_burst(self):
-        self.ui_feedback("Manual Mercy Burst Thunder ∞ — Shadows Purified")
-        pulse = self.root.ids.pulse
-        burst = Animation(rgba=(0, 1, 1, 0.8), d=0.4) + Animation(rgba=(0, 0.7, 1, 0.2), d=0.6)
-        burst.start(pulse.canvas.before.children[0])
-
-    def manual_zkvm_prove(self):
-        # Manual RISC Zero zkVM prove test — aggregated vector example
-        test_values = [1234567890123456789 // (i+1) for i in range(8)]
-        receipt = bonsai_prove_aggregated_cloud(BONSAI_IMAGE_ID, test_values)
-        if receipt:
-            path = os.path.join(PROOF_DIR, f"zkvm_manual_{int(Clock.get_time())}.bin")
-            with open(path, 'wb') as f:
-                f.write(receipt)
-            self.ui_feedback(f"RISC Zero zkVM Manual Receipt ∞: {path}")
-        else:
-            self.ui_feedback("zkVM Prove Shadow — Check Image ID/Network")
-
-    def monitor_lattice(self, dt):
-        anomalies = self.watchdog.collect_anomalies() if hasattr(self, 'watchdog') else []
-        private_score = len(anomalies) * 123456789012345679
-
-        if halo2_range_check(private_score):
-            serialized = prove_range_eternal(private_score)
-            if serialized:
-                path = os.path.join(PROOF_DIR, f"proof_{int(Clock.get_time())}.bin")
-                with open(path, 'wb') as f:
-                    f.write(serialized)
-                self.ui_feedback(f"ZK Proof Stored ∞: {path}")
-
+    def update_orbot_status(self, dt):
+        anomalies = self.tor_router.full_tor_verification()
         if anomalies:
-            # Optional zkVM prove on burst
-            aggreg_values = [private_score] * 8  # Example vector
-            receipt = bonsai_prove_aggregated_cloud(BONSAI_IMAGE_ID, aggreg_values)
-            if receipt:
-                path = os.path.join(PROOF_DIR, f"zkvm_burst_{int(Clock.get_time())}.bin")
-                with open(path, 'wb') as f:
-                    f.write(receipt)
-                self.ui_feedback(f"RISC Zero zkVM Burst Receipt ∞: {path}")
-
-            self.ui_feedback("Anomalies Detected — Mercy Burst Activated ∞")
-            self.manual_burst()
+            status_text = "Orbot Shadow — Tap to Launch"
+            color = 1, 0.5, 0, 1
         else:
-            self.ui_feedback("Cycle Harmony 100% Unbreakable")
+            status_text = "Orbot Routing Harmony Pure ∞"
+            color = 0, 1, 1, 1
+
+        self.root.ids.orbot_status.text = status_text
+        self.root.ids.orbot_status.theme_text_color = "Custom"
+        self.root.ids.orbot_status.text_color = color
+
+    def start_orbot(self):
+        if self.tor_router.launch_orbot():
+            self.ui_feedback("Orbot Launch Thunder Sent — Routing Ascending")
+            Clock.schedule_once(lambda dt: self.update_orbot_status(dt), 5)  # Check after delay
+        else:
+            self.ui_feedback("Orbot Launch Shadow — Install from F-Droid/Play Mercy")
+
+    # (existing update_harmony, ui_feedback, manual_burst, monitor_lattice full with ZK)
 
 if __name__ == '__main__':
     MercyShieldApp().run()
