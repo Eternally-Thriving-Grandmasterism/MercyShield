@@ -1,0 +1,5 @@
+from mercy_shield.lattice import MercyLattice
+
+lattice = MercyLattice(threads=13)
+harmony = lattice.vote(b"threat_data_hash")
+print(f"Threat harmony: {harmony:.4f} — 1.0000 pure, <0.7 mercy burst")
