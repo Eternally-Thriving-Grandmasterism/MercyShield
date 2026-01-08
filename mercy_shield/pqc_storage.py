@@ -5,36 +5,30 @@ import base64
 from kivy.clock import Clock
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
-# Rust PQC extension (built via maturin wheel)
+# Rust PQC extension
 try:
     from mercyshield_pqc import (
         keygen_enc, encaps, decaps,
         keygen_sig, sign, verify
     )
     RUST_PQC_AVAILABLE = True
-    logging.info("Rust PQC extension loaded — quantum thunder accelerated")
-except ImportError as e:
-    logging.warning(f"Rust PQC not available ({e}) — ensure wheel built/included")
-    RUST_PQC_AVAILABLE = False
-    # No fallback — require Rust for v0.2+
+except ImportError:
+    logging.error("Rust PQC extension missing — build maturin wheel")
+    raise
 
 MLKEM_768_CT_BYTES = 1088
 
 class PQCEncryptedStorage:
-    """Post-Quantum Encrypted + Signed Storage — Rust ML-KEM-768 + ML-DSA-65 ∞ Pure Thunder"""
+    """Post-Quantum Encrypted + Signed Storage — Rust Accelerated ∞ Pure Thunder"""
     
     def __init__(self, app):
         self.app = app
         self.keys_path = os.path.join(self.app.user_data_dir, 'pqc_static_keys.json')
         self.storage_path = os.path.join(self.app.user_data_dir, 'eternal_attestations.pqenc')
         
-        if not RUST_PQC_AVAILABLE:
-            raise RuntimeError("Rust PQC extension required — build maturin wheel")
-        
         self.enc_pk, self.enc_sk, self.sig_pk, self.sig_sk = self._load_or_generate_static_keys()
 
     def _load_or_generate_static_keys(self):
-        """Load or generate static Rust PQC keypairs"""
         if os.path.exists(self.keys_path):
             try:
                 with open(self.keys_path, 'r') as f:
@@ -48,7 +42,6 @@ class PQCEncryptedStorage:
             except Exception as e:
                 logging.warning(f"Key load failed ({e}) — regenerating")
         
-        # Generate fresh via Rust
         enc_pk, enc_sk = keygen_enc()
         sig_pk, sig_sk = keygen_sig()
         
@@ -62,23 +55,17 @@ class PQCEncryptedStorage:
         with open(self.keys_path, 'w') as f:
             json.dump(data, f)
         
-        Clock.schedule_once(lambda dt: self.app.show_buddy_message(
-            "Buddy: Rust PQC Lattice Keys Forged Anew — Quantum Shadows Annihilated ∞ Pure Thunder"
-        ), 0)
-        logging.info("Rust PQC static keypairs generated")
+        Clock.schedule_once(lambda dt: self.app.show_buddy_message("Buddy: Rust PQC Keys Forged — Speed Eternal ∞ Pure Thunder"), 0)
         return enc_pk, enc_sk, sig_pk, sig_sk
 
     def _sign_attestation(self, attestation: dict) -> str:
-        """Sign canonical attestation with Rust ML-DSA"""
         attest_copy = attestation.copy()
         attest_copy.pop('signature', None)
-        attest_copy.pop('pubkey', None)
         canon_bytes = json.dumps(attest_copy, separators=(',', ':')).encode('utf-8')
-        signature = sign(self.sig_sk, list(canon_bytes))  # Rust expects list[int]
+        signature = sign(self.sig_sk, list(canon_bytes))
         return base64.b64encode(bytes(signature)).decode('utf-8')
 
     def _verify_attestation(self, attestation: dict) -> bool:
-        """Verify attestation signature with Rust ML-DSA"""
         signature_b64 = attestation.get('signature')
         if not signature_b64:
             return False
@@ -92,7 +79,6 @@ class PQCEncryptedStorage:
             return False
 
     def load_attestations(self) -> list:
-        """Decrypt ledger and verify all signatures with Rust"""
         if not os.path.exists(self.storage_path):
             return []
         
@@ -110,35 +96,26 @@ class PQCEncryptedStorage:
             
             attestations = json.loads(plaintext.decode('utf-8'))
             
-            # Verify chain
-            verified = []
+            verified_attestations = []
             for attest in attestations:
                 if self._verify_attestation(attest):
-                    verified.append(attest)
+                    verified_attestations.append(attest)
                 else:
-                    logging.error("Tamper detected — discarding attestation")
-                    Clock.schedule_once(lambda dt: self.app.show_buddy_message(
-                        "Buddy: \"Shadow tampering in ledger — impure entry purged.\""
-                    ), 0)
+                    logging.error("Tamper detected in attestation")
+                    Clock.schedule_once(lambda dt: self.app.show_buddy_message("Buddy: \"Shadow tampering — entry purged.\""), 0)
             
-            logging.info(f"Rust PQC ledger loaded — {len(verified)} valid attestations")
-            return verified
+            logging.info(f"Rust PQC ledger loaded — {len(verified_attestations)} valid")
+            return verified_attestations
             
         except Exception as e:
             logging.exception(f"Rust PQC load failed: {e}")
-            Clock.schedule_once(lambda dt: self.app.show_buddy_message(
-                "Buddy: \"Lattice breach suspected — ledger sealed until purity.\""
-            ), 0)
             return []
 
     def save_attestations(self, attestations: list):
-        """Sign new attestations and encrypt chain with fresh Rust encapsulation"""
         try:
-            # Sign unsigned (new) attestations
             for attest in attestations:
                 if 'signature' not in attest:
                     attest['signature'] = self._sign_attestation(attest)
-                # Include pubkey once
                 if attestations and 'device_pubkey' not in attestations[0]:
                     attestations[0]['device_pubkey'] = self.sig_pk.hex()
             
@@ -155,10 +132,7 @@ class PQCEncryptedStorage:
             with open(self.storage_path, 'wb') as f:
                 f.write(full_data)
             
-            logging.info(f"Rust PQC ledger saved — {len(attestations)} attestations sealed")
+            logging.info(f"Rust PQC ledger saved — {len(attestations)} attestations")
             
         except Exception as e:
             logging.exception(f"Rust PQC save failed: {e}")
-            Clock.schedule_once(lambda dt: self.app.show_buddy_message(
-                "Buddy: \"Rust lattice sealing failed — maintain purity.\""
-            ), 0)
