@@ -1,66 +1,93 @@
 import logging
 import socket
 import requests
-from jnius import autoclass
+from jnius import autoclass, JavaException
 
-# Optional for real connection test
-try:
-    Context = autoclass('android.content.Context')
-    PythonActivity = autoclass('org.kivy.android.PythonActivity')
-except Exception as e:
-    logging.warning(f"Tor Pyjnius Shadow: {e}")
-    PythonActivity = None
+# Android pyjnius classes
+PythonActivity = autoclass('org.kivy.android.PythonActivity')
+Intent = autoclass('android.content.Intent')
+Context = autoclass('android.content.Context')
+PackageManager = autoclass('android.content.pm.PackageManager')
 
-# Known Tor check endpoints
-TOR_CHECK_URL = "https://check.torproject.org/api/ip"
-ONION_TEST = "http://expyuzz4wqqyqhjn.onion"  # Known test onion (or use known good)
+ORBOT_PACKAGE = "org.torproject.android"
+ORBOT_START_ACTION = "org.torproject.android.START_TOR"
 
 class TorRouting:
-    """Real Tor Routing Verification Thunder ∞ Pure — Proxy active + connection test"""
+    """Real Orbot App Integration Thunder ∞ Pure — Launch, Proxy Check, Routing Test"""
     def __init__(self, app):
         self.app = app
+        self.activity = PythonActivity.mActivity
+        self.context = self.activity.getPackageManager()
+
+    def is_orbot_installed(self) -> bool:
+        """Check if Orbot app installed"""
+        try:
+            self.context.getPackageInfo(ORBOT_PACKAGE, PackageManager.GET_ACTIVITIES)
+            return True
+        except JavaException:
+            return False
+
+    def launch_orbot(self) -> bool:
+        """Launch Orbot app/start intent"""
+        if not self.is_orbot_installed():
+            logging.warning("Orbot Not Installed — Mercy Shadow")
+            return False
+
+        try:
+            intent = Intent()
+            intent.setAction(ORBOT_START_ACTION)
+            intent.addCategory(Intent.CATEGORY_DEFAULT)
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            self.activity.startActivity(intent)
+            logging.info("Orbot Launch Intent Sent Harmony ∞")
+            return True
+        except Exception as e:
+            logging.error(f"Orbot Launch Shadow: {e}")
+            return False
 
     def is_tor_proxy_active(self) -> bool:
-        """Check common Tor SOCKS ports (Orbot default 9050/9150)"""
+        """Check common Orbot SOCKS ports"""
         tor_ports = [9050, 9150, 9051]
         for port in tor_ports:
             try:
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                s.settimeout(2)
+                s.settimeout(3)
                 s.connect(('127.0.0.1', port))
                 s.close()
-                logging.info(f"Tor Proxy Active on Port {port} Harmony")
                 return True
             except:
                 continue
         return False
 
-    def tor_connection_test(self) -> bool:
-        """Test connection through Tor proxy (check.torproject.org)"""
+    def tor_routing_test(self) -> bool:
+        """Test routing through Orbot proxy to check.torproject.org"""
         proxies = {
             'http': 'socks5h://127.0.0.1:9050',
             'https': 'socks5h://127.0.0.1:9050',
         }
         try:
-            response = requests.get(TOR_CHECK_URL, proxies=proxies, timeout=10)
+            response = requests.get("https://check.torproject.org/api/ip", proxies=proxies, timeout=15)
             data = response.json()
-            if data.get("IsTor", False):
-                logging.info("Tor Connection Test Harmony Pure ∞")
-                return True
+            return data.get("IsTor", False)
         except Exception as e:
-            logging.warning(f"Tor Connection Test Shadow: {e}")
-        return False
+            logging.warning(f"Tor Routing Test Shadow: {e}")
+            return False
 
     def full_tor_verification(self) -> list[str]:
         anomalies = []
 
-        if not self.is_tor_proxy_active():
-            anomalies.append("Tor Proxy Not Active — Routing Shadow Critical")
+        if not self.is_orbot_installed():
+            anomalies.append("Orbot App Not Installed — Install from F-Droid/Play Mercy")
 
-        if not self.tor_connection_test():
-            anomalies.append("Tor Connection Failed — Not Routed Through Tor")
+        if not self.is_tor_proxy_active():
+            anomalies.append("Orbot Proxy Not Active — Launch Orbot Required")
+            # Auto-launch grace optional
+            # self.launch_orbot()
+
+        if not self.tor_routing_test():
+            anomalies.append("Traffic Not Routed Through Tor — Shadow Critical")
 
         if not anomalies:
-            logging.info("Tor Routing Verification Harmony Pure ∞")
+            logging.info("Orbot Tor Routing Harmony Pure ∞")
 
         return anomalies
