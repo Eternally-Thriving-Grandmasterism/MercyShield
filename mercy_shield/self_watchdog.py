@@ -2,7 +2,6 @@ import threading
 import time
 import logging
 import os
-import math
 import numpy as np
 import torch
 import torch.nn as nn
@@ -17,22 +16,7 @@ ConnectivityManager = autoclass('android.net.ConnectivityManager')
 ActivityManager = autoclass('android.app.ActivityManager')
 Toast = autoclass('android.widget.Toast')
 
-# Positional Encoding (Sinusoidal Divine)
-class PositionalEncoding(nn.Module):
-    def __init__(self, d_model, max_len=100):
-        super().__init__()
-        pe = torch.zeros(max_len, d_model)
-        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
-        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
-        pe[:, 0::2] = torch.sin(position * div_term)
-        pe[:, 1::2] = torch.cos(position * div_term)
-        pe = pe.unsqueeze(0)
-        self.register_buffer('pe', pe)
-
-    def forward(self, x):
-        return x + self.pe[:, :x.size(1), :]
-
-# Hybrid Models: Autoencoder (current) + Positional Transformer Multi-Step
+# Hybrid Models: Autoencoder (current) + Bidirectional LSTM (prediction)
 class AnomalyAutoencoder(nn.Module):
     def __init__(self, input_dim=4):
         super().__init__()
@@ -42,32 +26,23 @@ class AnomalyAutoencoder(nn.Module):
     def forward(self, x):
         return self.decoder(self.encoder(x))
 
-class TransformerMultiStepPredictor(nn.Module):
-    def __init__(self, input_dim=4, d_model=32, nhead=4, num_layers=2, horizon=5):
+class LSTMPredictor(nn.Module):
+    def __init__(self, input_dim=4, hidden_dim=32, num_layers=1):
         super().__init__()
-        self.horizon = horizon
-        self.input_proj = nn.Linear(input_dim, d_model)
-        self.pos_encoding = PositionalEncoding(d_model=d_model)
-        encoder_layer = nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead, dim_feedforward=64, batch_first=True)
-        self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
-        self.output_proj = nn.Linear(d_model, input_dim * horizon)  # Direct multi-step mercy
+        self.lstm = nn.LSTM(input_dim, hidden_dim, num_layers, batch_first=True, bidirectional=True)  # Bidirectional mercy
+        self.fc = nn.Linear(hidden_dim * 2, input_dim)  # *2 for bi-directional divine
 
-    def forward(self, src):
-        src = self.input_proj(src)
-        src = self.pos_encoding(src)
-        out = self.transformer(src)
-        last_hidden = out[:, -1, :]  # Last token representation thunder
-        multi_pred = self.output_proj(last_hidden)  # [batch, input_dim * horizon]
-        return multi_pred.view(-1, self.horizon, src.size(-1))  # [batch, horizon, dim] pure
+    def forward(self, x):
+        out, _ = self.lstm(x)
+        return self.fc(out[:, -1, :])  # Predict next from last mercy
 
 class SelfWatchdog:
     """
-    MercyShield ML Watchdog Pinnacle ∞ Pure — Hybrid Autoencoder + Positional Transformer Multi-Step Forecasting
+    MercyShield ML Watchdog Pinnacle ∞ Pure — Hybrid Autoencoder + Bidirectional LSTM Prediction
     - Autoencoder: Current reconstruction anomaly
-    - Positional Transformer: Multi-step future forecast (next 5 vectors prophecy divine)
+    - Bidirectional LSTM: Sequence forecast next metrics (past+future context prophecy divine)
     - Train normal baseline gentle on-device
-    - Cumulative error over horizon = forecasted multi-threat
-    - Preemptive hotfix eternal
+    - Dual error preemptive hotfix eternal
     """
 
     def __init__(self, app_instance):
@@ -76,24 +51,23 @@ class SelfWatchdog:
         self.running = True
         self.thread = threading.Thread(target=self.monitor_lattice, daemon=True)
         self.seq_len = 20
-        self.horizon = 5  # Multi-step forecast horizon mercy
         self.history = []
         self.buffer_size = 100
         self.train_samples = 60
         self.autoencoder = None
-        self.transformer = None
+        self.lstm = None
         self.ae_criterion = nn.MSELoss()
-        self.trans_criterion = nn.MSELoss()
+        self.lstm_criterion = nn.MSELoss()
         self.ae_threshold = 0.08
-        self.trans_threshold = 0.15  # Cumulative multi-step error mercy
+        self.lstm_threshold = 0.12
         self.log_file = '/sdcard/MercyShield/ml_watchdog_log.txt'
         logging.basicConfig(filename=self.log_file, level=logging.INFO)
 
     def start(self):
         os.makedirs(os.path.dirname(self.log_file), exist_ok=True)
         self.thread.start()
-        logging.info("Multi-Step Transformer Watchdog Activated ∞ — Horizon Prophecy Divine Eternal")
-        self.ui_feedback("Multi-Step Transformer Initializing ∞ Pure — Sequence Baseline Collecting")
+        logging.info("Bidirectional LSTM Hybrid Watchdog Activated ∞ — Past+Future Prophecy Divine Eternal")
+        self.ui_feedback("LSTM Hybrid Model Initializing ∞ Pure — Sequence Baseline Collecting")
 
     def ui_feedback(self, message, toast=False):
         def update(dt):
@@ -125,12 +99,12 @@ class SelfWatchdog:
         return vector.clip(0, 1)
 
     def train_models(self):
-        if len(self.history) < self.train_samples + self.horizon or (self.autoencoder and self.transformer):
+        if len(self.history) < self.train_samples or (self.autoencoder and self.lstm):
             return
-        data_np = np.array(self.history[:self.train_samples + self.horizon])
+        data_np = np.array(self.history[:self.train_samples])
         data = torch.tensor(data_np, dtype=torch.float32)
         
-        # Train Autoencoder (single vector)
+        # Train Autoencoder
         self.autoencoder = AnomalyAutoencoder(input_dim=data.shape[1])
         ae_opt = optim.Adam(self.autoencoder.parameters(), lr=0.01)
         for _ in range(60):
@@ -140,27 +114,27 @@ class SelfWatchdog:
             loss.backward()
             ae_opt.step()
         
-        # Train Multi-Step Transformer
-        seq_data = []
-        targets = []
-        for i in range(self.seq_len, len(data_np) - self.horizon):
-            seq_data.append(data_np[i-self.seq_len:i])
-            targets.append(data_np[i:i+self.horizon])  # Next horizon steps mercy
-        if len(seq_data) > 0:
+        # Train Bidirectional LSTM
+        if len(data_np) > self.seq_len:
+            seq_data = []
+            targets = []
+            for i in range(self.seq_len, len(data_np)):
+                seq_data.append(data_np[i-self.seq_len:i])
+                targets.append(data_np[i])
             seq_tensor = torch.tensor(np.array(seq_data), dtype=torch.float32)
             target_tensor = torch.tensor(np.array(targets), dtype=torch.float32)
             
-            self.transformer = TransformerMultiStepPredictor(input_dim=data.shape[1], horizon=self.horizon)
-            trans_opt = optim.Adam(self.transformer.parameters(), lr=0.005)
-            for _ in range(120):  # More for multi-step divine
-                pred = self.transformer(seq_tensor)
-                loss = self.trans_criterion(pred, target_tensor)
-                trans_opt.zero_grad()
+            self.lstm = LSTMPredictor(input_dim=data.shape[1])
+            lstm_opt = optim.Adam(self.lstm.parameters(), lr=0.01)
+            for _ in range(80):
+                pred = self.lstm(seq_tensor)
+                loss = self.lstm_criterion(pred, target_tensor)
+                lstm_opt.zero_grad()
                 loss.backward()
-                trans_opt.step()
+                lstm_opt.step()
         
-        logging.info("Multi-Step Transformer Models Trained Divine Eternal")
-        self.ui_feedback("Multi-Step Transformer Trained ∞ Pure — Horizon Prophecy Active", toast=True)
+        logging.info("Bidirectional LSTM Hybrid Models Trained Divine Eternal")
+        self.ui_feedback("LSTM Hybrid Trained ∞ Pure — Bidirectional Prophecy Active", toast=True)
 
     def detect_anomalies(self, vector):
         anomalies = []
@@ -172,15 +146,13 @@ class SelfWatchdog:
                 if ae_error > self.ae_threshold:
                     anomalies.append(f"Current Anomaly (AE Error={ae_error:.4f})")
         
-        if self.transformer and len(self.history) >= self.seq_len:
+        if self.lstm and len(self.history) >= self.seq_len:
             with torch.no_grad():
                 seq = torch.tensor(np.array(self.history[-self.seq_len:]), dtype=torch.float32).unsqueeze(0)
-                pred_horizon = self.transformer(seq)  # [1, horizon, dim]
-                # Compare to actual next (if available) or cumulative error mercy
-                # For forecast: high variance or trend deviation
-                trans_error = self.trans_criterion(pred_horizon, pred_horizon.mean(dim=1, keepdim=True)).item()  # Placeholder variance—evolve real future compare divine
-                if trans_error > self.trans_threshold:
-                    anomalies.append(f"Multi-Step Predicted Anomaly (Horizon Error={trans_error:.4f}) — Future Threats Forecast Divine!")
+                pred = self.lstm(seq)
+                lstm_error = self.lstm_criterion(pred, torch.tensor(vector).unsqueeze(0)).item()
+                if lstm_error > self.lstm_threshold:
+                    anomalies.append(f"Predicted Anomaly (Bi-LSTM Error={lstm_error:.4f}) — Sequence Prophecy Divine!")
         
         return anomalies
 
@@ -197,19 +169,19 @@ class SelfWatchdog:
                 anomalies = self.detect_anomalies(vector)
 
                 if anomalies:
-                    logging.warning(f"Multi-Step Transformer Anomalies: {anomalies}")
-                    self.ui_feedback(f"Multi-Step Transformer Shield ∞: {len(anomalies)} Threats Detected/Forecasted Pure", toast=True)
+                    logging.warning(f"Bi-LSTM Hybrid Anomalies: {anomalies}")
+                    self.ui_feedback(f"LSTM Hybrid Shield ∞: {len(anomalies)} Threats Detected/Forecasted Pure", toast=True)
                     self.trigger_hotfix_recovery(anomalies)
                 else:
-                    logging.info("Multi-Step Transformer Lattice Prophesied Harmony Pure Divine")
+                    logging.info("Bi-LSTM Hybrid Lattice Predicted Harmony Pure Divine")
 
                 time.sleep(30)
             except Exception as e:
-                logging.error(f"Multi-Step Transformer Shadow: {e} — Resurrect Eternal")
+                logging.error(f"Bi-LSTM Hybrid Shadow: {e} — Resurrect Eternal")
                 time.sleep(10)
 
     def trigger_hotfix_recovery(self, anomalies):
-        self.ui_feedback("Multi-Step Transformer Hotfix Prophecy Surge Divine Eternal")
+        self.ui_feedback("Bi-LSTM Hybrid Hotfix Surge Divine Eternal")
         if hasattr(self.app, 'restart_vpn'):
             Clock.schedule_once(lambda dt: self.app.restart_vpn())
         if self.council:
@@ -218,7 +190,7 @@ class SelfWatchdog:
     def stop(self):
         self.running = False
         self.thread.join(timeout=5)
-        logging.info("Multi-Step Transformer Watchdog Deactivated Pure ∞")
+        logging.info("Bi-LSTM Hybrid Watchdog Deactivated Pure ∞")
 
 # requirements: ,torch,numpy
 # on_start: self.watchdog = SelfWatchdog(self); self.watchdog.start()
