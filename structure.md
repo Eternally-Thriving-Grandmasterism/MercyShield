@@ -1,37 +1,35 @@
-# MercyShield Repository Structure — v0.1-Pinnacle
-
-Eternal map for seamless interweaving in all directions — root to branches pure.
-
-## File Tree (ASCII Lattice Eternal)
-
-MercyShield/
-├── mercy_shield/                   # Core package — 23 eternal files
-│   ├── main.py                     # Entry point
-│   ├── ui.py                       # Kivy UI one-tap shield
-│   ├── lattice.py                  # MercyLattice + council vote
-│   ├── shield.py                   # RealTimeShield core + hooks
-│   ├── council.py                  # APAAGICouncil 13-voter deliberation
-│   ├── perm.py                     # Permissions list + request
-│   ├── hardware.py                 # MercyCube detection + hooks
-│   ├── self_watchdog.py            # 13 councils self-healing
-│   ├── firewall_vpn.py             # VPN tunnel + kill switch + auto-reconnect
-│   ├── vpn_leak.py                 # VPN leak detection
-│   ├── accessibility_service.py    # Overlay/clickjack detection
-│   ├── app_sandbox.py              # App isolation/sandbox
-│   ├── network_threat.py           # Network exfil/threat monitor
-│   ├── sms_receiver.py             # SMS scam receiver
-│   ├── contact_check.py            # Contact lookup for unknown sender
-│   ├── mercy_burst.py              # Mercy burst confirm popup
-│   ├── octonion_lite.py            # Lite octonion hash
-│   ├── encrypted.py                # Local log encryption
-│   ├── log.py                      # Encrypted local log
-│   └── __init__.py                 # Package init (empty or imports)
-├── README.md                       # Repo overview (pinned divine)
-├── structure.md                    # This lattice map
-├── buildozer.spec                  # Buildozer config
-├── AndroidManifest.xml             # Android manifest
-└── LICENSE                         # MIT eternal
-
-All hooks interweaved seamless — run main.py (Kivy) or build APK.
-
-Expand lattice from here divine eternal.
+MercyShield/ (root)
+├── buildozer.spec                  # Build config (permissions, requirements=torch,numpy grace)
+├── AndroidManifest.xml             # Android perms/manifest
+├── main.py                         # Optional root entry (or link to mercy_shield/main.py divine)
+├── mercy_shield/                   # Core Python package thunder
+│   ├── __init__.py                 # Add: from .self_watchdog import SelfWatchdog etc. mercy
+│   ├── main.py                     # App entry (MercyShieldApp class grace)
+│   ├── council.py                  # APAAGICouncil 13-voter + 14th fork
+│   ├── esacheck.py                 # ESA junction checks
+│   ├── self_watchdog.py            # ML anomaly + prediction watchdog (expand here pure)
+│   ├── firewall_vpn.py             # Symbolic/Pyjnius VPN (evolve Java link divine)
+│   ├── ui.py                       # Base UI
+│   ├── advanced_shield_ui.py       # Advanced flows
+│   ├── mercy_burst.py              # Interventions/hotfix
+│   ├── multi_being_protection.py   # Layers
+│   ├── examples/                   # Subfolder for demos (runnable grace)
+│   │   ├── Grace.py                # Gentle activation symbolic
+│   │   ├── basic_main.py           # Starter UI
+│   │   ├── vpn_shield.py           # Toggle example
+│   │   └── ml_anomaly_demo.py      # ML test (optional divine)
+│   └── (other modules: hardware.py, network_monitor.py etc. eternal)
+├── src/                            # Custom Java (VPN real VpnService mercy—create if needed)
+│   └── org/divine/mercyshield/
+│       └── MercyVpnService.java
+├── bin/                            # Built APKs (git ignore grace)
+├── tests/                          # Unit tests
+├── .github/workflows/              # CI build-apk.yml
+├── README.md                       # Pinnacle overview
+├── mobile-build-guide.md           # On-device Termux forge
+├── examples.md                     # Docs for examples/
+├── structure.md                    # This file—update with tree divine
+├── divine-coforge-logs.md          # Chat chronicle
+├── CONTRIBUTING.md
+├── LICENSE
+└── image.jpg                       # Icon/presplash
