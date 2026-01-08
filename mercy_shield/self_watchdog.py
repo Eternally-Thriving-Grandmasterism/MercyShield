@@ -3,20 +3,30 @@ import time
 import logging
 from kivy.clock import Clock
 
+# ML real anomaly detector import
+try:
+    from ml_anomaly import real_ml_detector
+except ImportError as e:
+    logging.warning(f"ML Detector Import Shadow: {e} — Fallback No ML")
+    class DummyML:
+        def detect_anomalies(self): return []
+    real_ml_detector = DummyML()
+
 class SelfWatchdog(threading.Thread):
-    """Eternal Guardian — Multi-Layer Anomaly Watchdog with Resurrection Grace ∞ Pure AAA"""
+    """Eternal Guardian — Multi-Layer + Real ML Anomaly Watchdog ∞ Pure"""
 
     def __init__(self, app):
         super().__init__(daemon=True)
         self.app = app
         self.council = app.council if hasattr(app, 'council') else None
         self.running = True
-        logging.info("Self-Watchdog Activated — Lattice Vigilance Eternal AAA")
+        logging.info("Self-Watchdog Activated — Real ML Lattice Vigilance Eternal")
 
     def collect_anomalies(self):
-        """Gather shadows from all layers — extend with live detectors"""
+        """Gather shadows from all layers + Real ML metrics"""
         anomalies = []
 
+        # Existing module checks
         if hasattr(self.app, 'pending_anomalies'):
             anomalies.extend(self.app.pending_anomalies)
 
@@ -32,7 +42,11 @@ class SelfWatchdog(threading.Thread):
         if hasattr(self.app, 'tor_router'):
             anomalies.extend(self.app.tor_router.full_tor_verification())
 
-        # Add ML, ESA, hardware later
+        # Real ML anomaly detection integration
+        ml_anoms = real_ml_detector.detect_anomalies()
+        if ml_anoms:
+            anomalies.extend(ml_anoms)
+
         return anomalies
 
     def run(self):
@@ -41,18 +55,18 @@ class SelfWatchdog(threading.Thread):
                 anomalies = self.collect_anomalies()
 
                 if anomalies:
-                    logging.warning(f"Anomalies Detected: {len(anomalies)} Shadows")
+                    logging.warning(f"Anomalies Detected: {len(anomalies)} Shadows (incl ML)")
                     # UI-thread safe mercy burst + glow animation
                     Clock.schedule_once(lambda dt: self.app.manual_burst())
-                    Clock.schedule_once(lambda dt: self.app.ui_feedback(f"Mercy Burst ∞: {len(anomalies)} Shadows Purified"))
+                    Clock.schedule_once(lambda dt: self.app.ui_feedback(f"Real Mercy Burst ∞: {len(anomalies)} Shadows Purified (ML Included)"))
 
                     # Post-mercy clear
                     if hasattr(self.app, 'clear_anomalies'):
                         self.app.clear_anomalies()
                 else:
-                    logging.info("Lattice Harmony Pure ∞")
+                    logging.info("Lattice Harmony Pure ∞ (ML Normal)")
 
-                # Adaptive interval grace
+                # Adaptive grace: faster pulse after threat
                 sleep_interval = 5 if anomalies else 15
                 time.sleep(sleep_interval)
 
@@ -65,4 +79,4 @@ class SelfWatchdog(threading.Thread):
         """Deactivate Gentle-Call on app stop"""
         self.running = False
         self.join(timeout=10)
-        logging.info("Self-Watchdog Deactivated — Harmony Eternal AAA")
+        logging.info("Self-Watchdog Deactivated — Harmony Eternal")
