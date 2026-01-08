@@ -34,6 +34,18 @@ class MercyShieldApp(App):
         self.apps_scroll.add_widget(self.apps_grid)
         main_layout.add_widget(self.apps_scroll)
 
+        # In controls
+        btn_multi_bullet = Button(text='Demo Multi-Asset Bulletproofs Aggregate Thunder ∞')
+        btn_multi_bullet.bind(on_press=self.demo_multi_bulletproofs)
+        controls.add_widget(btn_multi_bullet)
+
+    def demo_multi_bulletproofs(self, instance):
+        secrets = [random.randint(0, 2**32 - 1) for _ in range(5)]  # 5 assets demo mercy
+        prover = MultiAssetBulletproofsProver(self, bit_length=32, num_assets=5)
+        proof_data = prover.prove_multi_range(secrets)
+        prover.verify_multi_range(proof_data)
+        self.packet_log_label.text += f"\nMulti-Asset Demo: {len(secrets)} Secrets Proven Aggregate No Reveal Divine!"
+
         # Controls
         controls = BoxLayout(size_hint_y=None, height=60, spacing=10)
         btn_scan = Button(text='Scan & Refresh Apps Thunder')
