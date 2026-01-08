@@ -1,0 +1,7 @@
+from mercy_shield.mercy_burst import mercy_burst_confirm
+
+threat = {"desc": "Test shadow"}
+if mercy_burst_confirm(threat):
+    print("Mercy override — allowed gentle")
+else:
+    print("Blocked — mercy burst divine")
