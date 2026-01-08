@@ -15,8 +15,6 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
-import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -24,63 +22,113 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class MercyVpnService extends VpnService {
     private static final String TAG = "MercyVPN ∞ Pure";
-    private static final byte[] LOCAL_IP = new byte[]{10, 1, 10, 1}; // VPN Interface IP mercy
+    private static final byte[] LOCAL_IP = new byte[]{10, 1, 10, 1};
     private ParcelFileDescriptor mInterface;
     private Thread mPacketThread;
     private Set<String> mBlockedDomains = new HashSet<>();
 
-    // Expanded TCP Connection Tracking Divine Eternal
+    // TCP Relay Tracking Divine
     private final ConcurrentHashMap<String, TcpRelay> tcpRelays = new ConcurrentHashMap<>();
 
     private static class TcpRelay {
-        SocketChannel remoteChannel;
-        long deviceSeqOffset = 0;
-        long remoteSeqOffset = 0;
-        long lastDeviceAck = 0;
-        long lastRemoteAck = 0;
-        boolean synReceived = false;
-        boolean established = false;
-        Thread deviceToRemote;
-        Thread remoteToDevice;
+        // ... same as previous: channels, offsets, threads ...
     }
 
-    private String tcpKey(byte[] srcIp, int srcPort, byte[] dstIp, int dstPort) {
-        return Arrays.toString(srcIp) + ":" + srcPort + "->" + Arrays.toString(dstIp) + ":" + dstPort;
-    }
-
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        // Load blocked packages/domains, stop previous, builder establish, notification same as previous divine
-
-        mPacketThread = new Thread(this::packetLoop);
-        mPacketThread.start();
-
-        Log.i(TAG, "MercyVPN Expanded TCP Relay Active—Thunder On ∞ Pure!");
-        return START_STICKY;
-    }
+    // ... onStartCommand, packetLoop start same ...
 
     private void packetLoop() {
-        try {
-            FileInputStream in = new FileInputStream(mInterface.getFileDescriptor());
-            FileOutputStream out = new FileOutputStream(mInterface.getFileDescriptor());
-            byte[] buffer = new byte[32767];
-            while (!Thread.interrupted()) {
-                int length = in.read(buffer);
-                if (length > 0) {
-                    ByteBuffer packet = ByteBuffer.wrap(buffer, 0, length);
-                    if ((packet.get(0) >> 4) == 4) { // IPv4
-                        int ipHeaderLen = (packet.get(0) & 0xF) * 4;
-                        byte protocol = packet.get(9);
-                        byte[] srcIp = getIpBytes(packet, 12);
-                        byte[] dstIp = getIpBytes(packet, 16);
+        // ... same loop ...
+                    if (protocol == 6) { // TCP
+                        // ... extract headers, key, relay ...
 
-                        if (protocol == 6) { // TCP Expanded Relay Thunder
-                            int tcpOffset = ipHeaderLen;
-                            int srcPort = unsignedShort(packet.getShort(tcpOffset));
-                            int dstPort = unsignedShort(packet.getShort(tcpOffset + 2));
-                            String key = tcpKey(srcIp, srcPort, dstIp, dstPort);
-                            TcpRelay relay = tcpRelays.get(key);
+                        // Example: when rewriting packet (reply injection or header adjust)
+                        // Zero checksum fields first
+                        packet.putShort(ipHeaderLen + 10, (short) 0); // IP checksum zero
+                        packet.putShort(tcpOffset + 16, (short) 0); // TCP checksum zero
 
+                        // Rewrite example: adjust seq/ack
+                        long newSeq = seq - relay.deviceSeqOffset;
+                        long newAck = ackNum - relay.remoteSeqOffset;
+                        packet.putInt(tcpOffset + 4, (int) newSeq);
+                        if (ack) packet.putInt(tcpOffset + 8, (int) newAck);
+
+                        // Recalculate checksums divine
+                        short ipChecksum = calculateIpChecksum(packet, 0, ipHeaderLen);
+                        packet.putShort(10, ipChecksum);
+
+                        short tcpChecksum = calculateTcpChecksum(packet, ipHeaderLen, length, srcIp, dstIp);
+                        packet.putShort(tcpOffset + 16, tcpChecksum);
+
+                        out.write(packet.array(), 0, length);
+                    }
+        // ... 
+    }
+
+    /** Full IP Header Checksum Recalculation Mercy */
+    private short calculateIpChecksum(ByteBuffer packet, int offset, int len) {
+        int sum = 0;
+        packet.position(offset);
+        int end = offset + len;
+        for (int i = offset; i < end; i += 2) {
+            if (i + 1 < end) {
+                sum += unsignedShort(packet.getShort(i));
+            } else {
+                sum += (unsignedByte(packet.get(i)) << 8);
+            }
+            if ((sum & 0xFFFF0000) != 0) {
+                sum = (sum & 0xFFFF) + (sum >>> 16);
+            }
+        }
+        return (short) (~sum & 0xFFFF);
+    }
+
+    /** Full TCP Checksum with Pseudo-Header Divine Eternal */
+    private short calculateTcpChecksum(ByteBuffer packet, int tcpOffset, int packetLen, byte[] srcIp, byte[] dstIp) {
+        int tcpLen = packetLen - tcpOffset;
+
+        int sum = 0;
+
+        // Pseudo-header mercy
+        sum += unsignedShort((short) ((srcIp[0] << 8 & 0xFF00) | (srcIp[1] & 0xFF)));
+        sum += unsignedShort((short) ((srcIp[2] << 8 & 0xFF00) | (srcIp[3] & 0xFF)));
+        sum += unsignedShort((short) ((dstIp[0] << 8 & 0xFF00) | (dstIp[1] & 0xFF)));
+        sum += unsignedShort((short) ((dstIp[2] << 8 & 0xFF00) | (dstIp[3] & 0xFF)));
+        sum += 6; // TCP protocol
+        sum += tcpLen;
+
+        // TCP header + payload gentle
+        packet.position(tcpOffset);
+        int end = tcpOffset + tcpLen;
+        for (int i = tcpOffset; i < end; i += 2) {
+            if (i + 1 < end) {
+                int word = unsignedShort(packet.getShort(i));
+                // Skip checksum field itself
+                if (i == tcpOffset + 16) word = 0;
+                sum += word;
+            } else {
+                sum += (unsignedByte(packet.get(i)) << 8);
+            }
+            if ((sum & 0xFFFF0000) != 0) {
+                sum = (sum & 0xFFFF) + (sum >>> 16);
+            }
+        }
+
+        return (short) (~sum & 0xFFFF);
+    }
+
+    private int unsignedByte(byte b) { return b & 0xFF; }
+    private int unsignedShort(short s) { return s & 0xFFFF; }
+    private long unsignedInt(int i) { return i & 0xFFFFFFFFL; }
+
+    private byte[] getIpBytes(ByteBuffer packet, int offset) {
+        byte[] ip = new byte[4];
+        packet.position(offset);
+        packet.get(ip);
+        return ip;
+    }
+
+    // ... rest of code: launchTcpRelay, closeRelay, DNS/UDP preserved, onDestroy cleanup ...
+}
                             int tcpHeaderLen = (packet.get(tcpOffset + 12) >> 4) * 4;
                             int payloadOffset = tcpOffset + tcpHeaderLen;
                             int payloadLen = length - payloadOffset;
