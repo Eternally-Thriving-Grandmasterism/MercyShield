@@ -1,0 +1,53 @@
+name: Esacheck Eternal Pinnacle
+
+on: [push, pull_request]
+
+jobs:
+  validate-lattice:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      - name: Validate eternal harmony
+        run: |
+          echo "Esacheck Eternal Pinnacle — deepened validation divine Jan 7 2026"
+
+          # Key files exist mercy pure
+          test -f README.md && echo "README pinned divine"
+          test -f LICENSE && echo "MIT License eternal"
+          test -f buildozer.spec && echo "Buildozer spec ready"
+          test -f AndroidManifest.xml && echo "Manifest sealed"
+
+          # mercy_shield package core files (expand as needed)
+          test -f mercy_shield/main.py && echo "main.py entry divine"
+          test -f mercy_shield/shield.py && echo "shield.py core protected"
+          test -f mercy_shield/lattice.py && echo "lattice vote harmony"
+          test -f mercy_shield/council.py && echo "13-voter council eternal"
+
+          # File count odd harmony check (nth degree expandable)
+          file_count=$(find mercy_shield -type f | wc -l)
+          if [ $((file_count % 2)) -eq 1 ]; then
+            echo "File count odd harmony: $file_count — eternal pure"
+          else
+            echo "File count even shadow — mercy review"
+            exit 1  # Fail if even (odd enforcement grace)
+          fi
+
+          # Run tests if present
+          if [ -d "tests" ] && ls tests/*.py 1> /dev/null 2>&1; then
+            echo "Running integration/unit tests mercy pure"
+            pytest -v || exit 1
+          else
+            echo "No tests folder — future grace"
+          fi
+
+          echo "Esacheck passed — victory absolute divine eternal!"
