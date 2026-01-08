@@ -1,26 +1,20 @@
-# risc0_bonsai.py - Aggregated Bonsai Cloud Prove ∞ Pure
-# Multi-value vector input — batch anomaly lattice proven safe
-# Cloud zkVM general thunder — no local build
-
 import requests
 import logging
 import os
-from typing import List
+from typing import List, Tuple
 
 BONSAI_API_URL = "https://api.bonsai.xyz/v1/prove"
-BONSAI_API_KEY = ""  # Your free key
+BONSAI_API_KEY = ""  # Your key
 
 PROOF_DIR = "/sdcard/MercyShield/zkvm_proofs/"
 
 def bonsai_prove_aggregated_cloud(image_id: str, values: List[int]) -> bytes:
-    """Cloud prove aggregated vector → receipt serialized"""
     if not image_id:
-        logging.warning("Bonsai Image ID Shadow — Fill Eternal")
+        logging.warning("Bonsai Image ID Missing")
         return b''
 
     os.makedirs(PROOF_DIR, exist_ok=True)
 
-    # Serialize vector u64 BE bytes
     input_bytes = b''.join(v.to_bytes(8, 'big') for v in values)
     payload = {
         "image_id": image_id,
@@ -38,31 +32,45 @@ def bonsai_prove_aggregated_cloud(image_id: str, values: List[int]) -> bytes:
         data = response.json()
 
         if data.get("status") == "SUCCESS":
-            receipt = bytes.fromhex(data["receipt"]["seg"] or data["receipt"])  # Adapt field
+            receipt_hex = data.get("receipt", "")
+            receipt = bytes.fromhex(receipt_hex)
             receipt_path = os.path.join(PROOF_DIR, f"aggreg_receipt_{int(os.time())}.bin")
             with open(receipt_path, 'wb') as f:
                 f.write(receipt)
-            logging.info(f"Aggregated Bonsai Receipt Harmony ∞: {receipt_path}")
+            logging.info(f"Bonsai Aggreg Receipt Saved: {receipt_path}")
             return receipt
         else:
-            logging.warning(f"Bonsai Status Shadow: {data.get('error', data)}")
+            logging.warning(f"Bonsai Status Error: {data}")
             return b''
     except requests.Timeout:
-        logging.error("Bonsai Timeout Grace — Network Shadow")
+        logging.error("Bonsai Timeout")
         return b''
     except Exception as e:
-        logging.error(f"Bonsai Critical Shadow: {e}")
+        logging.error(f"Bonsai Cloud Error: {e}")
         return b''
 
-# Hook in main.py monitor_lattice on burst
-# if anomalies:
-#     aggreg_values = [score1, score2, ...]  # Your vector
-#     receipt = bonsai_prove_aggregated_cloud(BONSAI_IMAGE_ID, aggreg_values)
-#     if receipt:
-#         self.ui_feedback("Aggregated zkVM Cloud Receipt ∞ — Batch Lattice Proven Safe Pure")
+def bonsai_verify_local(receipt_bytes: bytes, expected_num: int = 16) -> Tuple[bool, List[int], List[str]]:
+    try:
+        if len(receipt_bytes) < expected_num * (4 + 32):
+            return False, [], ["Receipt Too Short"]
 
-if __name__ == "__main__":
-    test_values = [1234567890123456789 // (i+1) for i in range(8)]
-    receipt = bonsai_prove_aggregated_cloud("fill-image-id", test_values)
-    if receipt:
-        print("Aggregated Bonsai Cloud Prove Harmony Pure ∞")
+        flags = []
+        offset = 0
+        for i in range(expected_num):
+            flag = int.from_bytes(receipt_bytes[offset:offset+4], 'big')
+            flags.append(flag)
+            offset += 4
+
+        if not all(f == 1 for f in flags):
+            return False, flags, ["Not All Junctions Proven Safe"]
+
+        hashes = []
+        for i in range(expected_num):
+            h = receipt_bytes[offset:offset+32].hex()
+            hashes.append(h)
+            offset += 32
+
+        return True, flags, hashes
+    except Exception as e:
+        logging.error(f"Local Verify Error: {e}")
+        return False, [], [str(e)]
