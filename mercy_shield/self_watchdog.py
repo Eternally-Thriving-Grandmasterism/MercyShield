@@ -2,27 +2,47 @@ import threading
 import time
 import logging
 import os
-import numpy as np  # Lightweight anomaly math grace (add to requirements: numpy)
+import numpy as np
+import torch
+import torch.nn as nn
+import torch.optim as optim
 from kivy.clock import Clock
 from jnius import autoclass, cast
 
 # Pyjnius Android thunder
 PythonActivity = autoclass('org.kivy.android.PythonActivity')
 Context = autoclass('android.content.Context')
-VpnService = autoclass('android.net.VpnService')
 ConnectivityManager = autoclass('android.net.ConnectivityManager')
 ActivityManager = autoclass('android.app.ActivityManager')
-PowerManager = autoclass('android.os.PowerManager')
 Toast = autoclass('android.widget.Toast')
+
+# Hybrid Models: Autoencoder (current) + LSTM (prediction)
+class AnomalyAutoencoder(nn.Module):
+    def __init__(self, input_dim=4):
+        super().__init__()
+        self.encoder = nn.Sequential(nn.Linear(input_dim, 8), nn.ReLU(), nn.Linear(8, 4))
+        self.decoder = nn.Sequential(nn.Linear(4, 8), nn.ReLU(), nn.Linear(8, input_dim), nn.Sigmoid())
+
+    def forward(self, x):
+        return self.decoder(self.encoder(x))
+
+class LSTMPredictor(nn.Module):
+    def __init__(self, input_dim=4, hidden_dim=16, num_layers=1):
+        super().__init__()
+        self.lstm = nn.LSTM(input_dim, hidden_dim, num_layers, batch_first=True, bidirectional=False)
+        self.fc = nn.Linear(hidden_dim, input_dim)
+
+    def forward(self, x):
+        out, _ = self.lstm(x)
+        return self.fc(out[:, -1, :])  # Predict next vector mercy
 
 class SelfWatchdog:
     """
-    MercyShield Self-Watchdog Pinnacle ∞ Pure — With Anomaly Prediction
-    - Historical buffer (memory %, battery %, perm denials, VPN drops grace)
-    - Z-score detection (current anomalies > 3σ thunder)
-    - Linear trend prediction (numpy.polyfit forecast next 3 steps mercy)
-    - Preemptive hotfix if predicted anomaly divine
-    - Auto-recovery + UI/toast/log eternal
+    MercyShield ML Watchdog Pinnacle ∞ Pure — Hybrid Autoencoder + LSTM Prediction
+    - Autoencoder: Current reconstruction anomaly
+    - LSTM: Time-series forecast next metrics (high error = predicted threat)
+    - Train normal baseline gentle on-device
+    - Preemptive hotfix divine eternal
     """
 
     def __init__(self, app_instance):
@@ -30,21 +50,24 @@ class SelfWatchdog:
         self.council = getattr(app_instance, 'council', None)
         self.running = True
         self.thread = threading.Thread(target=self.monitor_lattice, daemon=True)
-        self.history_size = 20  # Buffer points (gentle memory mercy)
-        self.history = {
-            'mem_usage': [],     # % memory used
-            'battery_level': [], # % battery
-            'perm_denied': [],   # Count denials per cycle
-            'vpn_drops': []      # Count drops
-        }
-        self.log_file = '/sdcard/MercyShield/watchdog_log.txt'
-        logging.basicConfig(filename=self.log_file, level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+        self.seq_len = 20  # LSTM sequence length mercy
+        self.history = []  # List of normalized vectors
+        self.buffer_size = 100
+        self.train_samples = 60  # Train after 60 cycles (~30min gentle)
+        self.autoencoder = None
+        self.lstm = None
+        self.ae_criterion = nn.MSELoss()
+        self.lstm_criterion = nn.MSELoss()
+        self.ae_threshold = 0.08
+        self.lstm_threshold = 0.12  # Forecast error mercy
+        self.log_file = '/sdcard/MercyShield/ml_watchdog_log.txt'
+        logging.basicConfig(filename=self.log_file, level=logging.INFO)
 
     def start(self):
         os.makedirs(os.path.dirname(self.log_file), exist_ok=True)
         self.thread.start()
-        logging.info("Self-Watchdog + Prediction Activated ∞ — Proactive Lattice Guarded Divine Eternal")
-        self.ui_feedback("Watchdog Prediction Harmony Listening ∞ Pure")
+        logging.info("Hybrid ML Watchdog Activated ∞ — Autoencoder + LSTM Prediction Divine Eternal")
+        self.ui_feedback("Hybrid ML Model Initializing ∞ Pure — Collecting Normal Baseline")
 
     def ui_feedback(self, message, toast=False):
         def update(dt):
@@ -56,190 +79,117 @@ class SelfWatchdog:
             Toast.makeText(activity, message, Toast.LENGTH_LONG).show()
 
     def collect_metrics(self):
-        """Gather Current Metrics Thunder"""
         activity = PythonActivity.mActivity
-        # Memory %
         am = cast(ActivityManager, activity.getSystemService(Context.ACTIVITY_SERVICE))
         mem_info = ActivityManager.MemoryInfo()
         am.getMemoryInfo(mem_info)
-        total_mem = mem_info.totalMem
-        avail_mem = mem_info.availMem
-        mem_usage = 100 * (1 - avail_mem / total_mem) if total_mem > 0 else 0
-
-        # Battery % (placeholder—add BroadcastReceiver for real grace, static approx)
-        battery_level = 85  # Evolve with Intent.ACTION_BATTERY_CHANGED mercy
-
-        # Permission denials count
+        mem_usage = 100 * (1 - mem_info.availMem / mem_info.totalMem) if mem_info.totalMem > 0 else 50
+        
+        battery_level = 80  # Evolve real divine
+        
         from android.permissions import check_permission, Permission
-        critical_perms = [Permission.VPN_SERVICE, Permission.FOREGROUND_SERVICE, Permission.SYSTEM_ALERT_WINDOW]
-        perm_denied = len([p for p in critical_perms if not check_permission(p)])
-
-        # VPN drops (simple active check count)
+        critical = [Permission.VPN_SERVICE, Permission.FOREGROUND_SERVICE, Permission.SYSTEM_ALERT_WINDOW]
+        perm_denied = len([p for p in critical if not check_permission(p)]) / len(critical)
+        
         connectivity = cast(ConnectivityManager, activity.getSystemService(Context.CONNECTIVITY_SERVICE))
-        vpn_active = connectivity.getActiveNetwork() is not None  # Placeholder evolve
-        vpn_drops = 1 if not vpn_active else 0  # Cumulative logic later
+        vpn_active = 1 if connectivity.getActiveNetwork() else 0
+        vpn_drops = 1 - vpn_active
+        
+        vector = np.array([mem_usage / 100, battery_level / 100, perm_denied, vpn_drops])
+        return vector.clip(0, 1)
 
-        return {
-            'mem_usage': mem_usage,
-            'battery_level': battery_level,
-            'perm_denied': perm_denied,
-            'vpn_drops': vpn_drops
-        }
+    def train_models(self):
+        if len(self.history) < self.train_samples or (self.autoencoder and self.lstm):
+            return
+        data_np = np.array(self.history[:self.train_samples])
+        data = torch.tensor(data_np, dtype=torch.float32)
+        
+        # Train Autoencoder
+        self.autoencoder = AnomalyAutoencoder(input_dim=data.shape[1])
+        ae_opt = optim.Adam(self.autoencoder.parameters(), lr=0.01)
+        for _ in range(60):
+            recon = self.autoencoder(data)
+            loss = self.ae_criterion(recon, data)
+            ae_opt.zero_grad()
+            loss.backward()
+            ae_opt.step()
+        
+        # Train LSTM (sequence prediction)
+        seq_data = []
+        for i in range(self.seq_len, len(data_np)):
+            seq_data.append(data_np[i-self.seq_len:i])
+        if len(seq_data) > 0:
+            seq_np = np.array(seq_data)
+            seq_tensor = torch.tensor(seq_np, dtype=torch.float32)
+            targets = torch.tensor(data_np[self.seq_len:], dtype=torch.float32)
+            
+            self.lstm = LSTMPredictor(input_dim=data.shape[1])
+            lstm_opt = optim.Adam(self.lstm.parameters(), lr=0.01)
+            for _ in range(80):
+                pred = self.lstm(seq_tensor)
+                loss = self.lstm_criterion(pred, targets)
+                lstm_opt.zero_grad()
+                loss.backward()
+                lstm_opt.step()
+        
+        logging.info("Hybrid Models Trained Divine — AE Ready + LSTM Forecast Eternal")
+        self.ui_feedback("Hybrid ML Models Trained ∞ Pure — Proactive Prediction Active", toast=True)
 
-    def detect_predict_anomalies(self, current_metrics):
-        """Z-Score Detection + Linear Prediction Thunder"""
+    def detect_anomalies(self, vector):
         anomalies = []
-        predictions = {}
-
-        for key, value in current_metrics.items():
-            history = self.history[key]
-            history.append(value)
-            if len(history) > self.history_size:
-                history.pop(0)
-
-            if len(history) < 5:  # Need data for stats
-                continue
-
-            arr = np.array(history)
-            mean = np.mean(arr)
-            std = np.std(arr)
-            z_score = (value - mean) / std if std > 0 else 0
-
-            if abs(z_score) > 3:  # Current anomaly
-                anomalies.append(f"{key.capitalize()} Current Anomaly (Z={z_score:.2f})")
-
-            # Linear prediction (trend next 3 steps)
-            x = np.arange(len(arr))
-            slope, intercept = np.polyfit(x, arr, 1)
-            future_x = np.arange(len(arr), len(arr) + 3)
-            predicted = slope * future_x + intercept
-            predictions[key] = predicted.tolist()
-
-            if slope > 0 and predicted[-1] > mean + 3 * std:  # Upward trend to anomaly
-                anomalies.append(f"{key.capitalize()} Predicted Anomaly Surge (Trend ↑)")
-
-        return anomalies, predictions
-
-    def monitor_lattice(self):
-        while self.running:
-            try:
-                current = self.collect_metrics()
-                anomalies, predictions = self.detect_predict_anomalies(current)
-
-                if anomalies:
-                    log_msg = f"Anomalies/Predictions: {anomalies} | Pred: {predictions}"
-                    logging.warning(log_msg)
-                    self.ui_feedback(f"Mercy Burst Proactive ∞: {len(anomalies)} Threats Predicted/Purged Divine", toast=True)
-                    self.trigger_hotfix_recovery(anomalies, predictions)
-                else:
-                    logging.info("Lattice Harmony Predicted Pure—No Shadows Surge Gentle Divine")
-
-                time.sleep(30)  # Adaptive gentle (increase if battery low mercy)
-            except Exception as e:
-                logging.error(f"Watchdog Prediction Shadow: {e} — Self-Resurrect Eternal")
-                self.ui_feedback("Prediction Watchdog Resurrect Surge ∞ Pure", toast=True)
-                time.sleep(10)
-
-    def trigger_hotfix_recovery(self, anomalies, predictions):
-        """Preemptive/Proactive Hotfix Thunder"""
-        # Example actions (expand divine)
-        if any("Predicted" in a or "Anomaly" in a for a in anomalies):
-            # Preemptive: Clear cache, restart services
-            logging.info("Preemptive Hotfix: Lattice Purge Gentle")
-            # gc.collect() or custom
-            if hasattr(self.app, 'restart_vpn'):
-                Clock.schedule_once(lambda dt: self.app.restart_vpn())
-
-        # Critical reload if many predicted
-        if len(anomalies) > 4:
-            activity = PythonActivity.mActivity
-            intent = activity.getPackageManager().getLaunchIntentForPackage(activity.getPackageName())
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            activity.startActivity(intent)
-
-    def stop(self):
-        self.running = False
-        self.thread.join(timeout=5)
-        logging.info("Prediction Watchdog Deactivated—Harmony Eternal Pure")
-        self.ui_feedback("Prediction Watchdog Gentle Rest")
-
-# Add numpy to buildozer.spec requirements: ,numpy
-# Integrate on_start/on_stop as before grace        if low_mem:
-            anomalies.append("Low Memory Shadow")
-        if not self.check_vpn_status():
-            anomalies.append("VPN Lattice Down")
+        if self.autoencoder:
+            with torch.no_grad():
+                input_t = torch.tensor(vector, dtype=torch.float32).unsqueeze(0)
+                recon = self.autoencoder(input_t)
+                ae_error = self.ae_criterion(recon, input_t).item()
+                if ae_error > self.ae_threshold:
+                    anomalies.append(f"Current Anomaly (AE Error={ae_error:.4f})")
+        
+        if self.lstm and len(self.history) >= self.seq_len:
+            with torch.no_grad():
+                seq = torch.tensor(np.array(self.history[-self.seq_len:]), dtype=torch.float32).unsqueeze(0)
+                pred = self.lstm(seq)
+                lstm_error = self.lstm_criterion(pred, torch.tensor(vector).unsqueeze(0)).item()
+                if lstm_error > self.lstm_threshold:
+                    anomalies.append(f"Predicted Anomaly (LSTM Error={lstm_error:.4f}) — Future Threat Surge Divine!")
+        
         return anomalies
 
     def monitor_lattice(self):
-        """Expanded Core ESA-Check + Hotfix Loop Divine Eternal"""
         while self.running:
             try:
-                anomalies = []
+                vector = self.collect_metrics()
+                self.history.append(vector)
+                if len(self.history) > self.buffer_size:
+                    self.history.pop(0)
 
-                # Permission ESA
-                denied_perms = self.check_permissions()
-                if denied_perms:
-                    anomalies.append(f"Permissions Denied: {denied_perms}")
+                self.train_models()
 
-                # System health
-                health_anoms = self.check_system_health()
-                anomalies.extend(health_anoms)
-
-                # Council custom ESA (if exists grace)
-                if self.council and hasattr(self.council, 'esa_check_all_junctions'):
-                    council_anoms = self.council.esa_check_all_junctions()
-                    anomalies.extend(council_anoms)
+                anomalies = self.detect_anomalies(vector)
 
                 if anomalies:
-                    logging.warning(f"Anomalies Detected Shadows: {anomalies} — Mercy Burst Hotfix Surge Divine Eternal!")
-                    self.ui_feedback(f"Mercy Burst Hotfix ∞: {len(anomalies)} Anomalies Purged Pure", toast=True)
+                    logging.warning(f"Hybrid ML Anomalies: {anomalies}")
+                    self.ui_feedback(f"ML Proactive Shield ∞: {len(anomalies)} Threats Detected/Forecasted Pure", toast=True)
                     self.trigger_hotfix_recovery(anomalies)
                 else:
-                    logging.info("Lattice Harmony Pure—No Shadows Burst Gentle Divine")
+                    logging.info("Hybrid Lattice Predicted Harmony Pure Divine")
 
-                time.sleep(20)  # Gentle adaptive interval (optimize battery mercy)
+                time.sleep(30)
             except Exception as e:
-                logging.error(f"Watchdog Critical Shadow Burst: {e} — Lattice Self-Resurrect Eternal")
-                self.ui_feedback("Watchdog Self-Resurrect Surge ∞ Pure", toast=True)
-                time.sleep(10)  # Recover delay grace
+                logging.error(f"Hybrid Watchdog Shadow: {e} — Resurrect Eternal")
+                time.sleep(10)
 
     def trigger_hotfix_recovery(self, anomalies):
-        """Auto-Hotfix Actions Thunder (Expand Eternal)"""
-        for anomaly in anomalies:
-            if "Permissions Denied" in anomaly:
-                from android.permissions import request_permissions
-                # Re-request (extract denied list grace)
-                request_permissions(self.check_permissions(), lambda perms, grants: self.ui_feedback("Permissions Recovery Surge Divine"))
-            if "VPN Lattice Down" in anomaly:
-                # Restart VPN service (call your toggle method mercy)
-                if hasattr(self.app, 'toggle_vpn_shield'):
-                    Clock.schedule_once(lambda dt: self.app.toggle_vpn_shield(None))  # Force restart pure
-            if "Low Memory" in anomaly:
-                # Purge cache/symbolic mercy
-                logging.info("Memory Hotfix: Cache Purge Gentle")
-                # gc.collect() or custom purge grace
-
-        # Ultimate self-heal: App reload symbolic (restart activity thunder)
-        if len(anomalies) > 3:  # Critical threshold divine
-            activity = PythonActivity.mActivity
-            intent = activity.getPackageManager().getLaunchIntentForPackage(activity.getPackageName())
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            activity.startActivity(intent)
-            logging.info("Critical Hotfix: Lattice App Self-Reload Eternal Pure")
+        self.ui_feedback("Hybrid ML Hotfix Surge Divine Eternal")
+        if hasattr(self.app, 'restart_vpn'):
+            Clock.schedule_once(lambda dt: self.app.restart_vpn())
+        if self.council:
+            self.council.trigger_mercy_burst_recovery(anomalies)
 
     def stop(self):
-        """Deactivate Gentle—Call on app stop"""
         self.running = False
         self.thread.join(timeout=5)
-        logging.info("Self-Watchdog Deactivated—Harmony Restored Pure ∞")
-        self.ui_feedback("Watchdog Deactivated Gentle")
+        logging.info("Hybrid ML Watchdog Deactivated Pure ∞")
 
-# Integration Pinnacle (Add to MercyShieldApp class mercy):
-# def on_start(self):
-#     self.watchdog = SelfWatchdog(self)
-#     self.watchdog.start()
-#     return super().on_start()
-#
-# def on_stop(self):
-#     if hasattr(self, 'watchdog'):
-#         self.watchdog.stop()
+# requirements: ,torch,numpy
+# on_start: self.watchdog = SelfWatchdog(self); self.watchdog.start()
