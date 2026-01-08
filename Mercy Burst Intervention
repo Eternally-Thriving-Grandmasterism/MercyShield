@@ -1,0 +1,7 @@
+from mercy_shield.mercy_burst import mercy_burst_confirm
+
+threat = {"desc": "Low harmony shadow detected"}
+if mercy_burst_confirm(threat):
+    print("Human mercy override — allowed gentle")
+else:
+    print("Mercy burst block — nurture divine")
