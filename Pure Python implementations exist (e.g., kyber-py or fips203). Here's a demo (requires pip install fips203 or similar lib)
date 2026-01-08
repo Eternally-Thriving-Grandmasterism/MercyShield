@@ -1,0 +1,14 @@
+from fips203 import ML_KEM_512  # Or from kyber_py.ml_kem
+
+# Key generation
+ek, dk = ML_KEM_512.keygen()
+
+# Encapsulation (sender)
+shared_secret_sender, ciphertext = ML_KEM_512.encaps(ek)
+
+# Decapsulation (receiver)
+shared_secret_receiver = ML_KEM_512.decaps(dk, ciphertext)
+
+# Verify match
+assert shared_secret_sender == shared_secret_receiver  # Always True if genuine
+print("Shared secret (32 bytes):", shared_secret_sender.hex())
