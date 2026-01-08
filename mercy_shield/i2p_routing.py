@@ -1,6 +1,6 @@
 import logging
 import socket
-import requests
+import time
 from jnius import autoclass, JavaException
 
 # Android pyjnius classes
@@ -9,10 +9,13 @@ Intent = autoclass('android.content.Intent')
 Context = autoclass('android.content.Context')
 PackageManager = autoclass('android.content.pm.PackageManager')
 
-I2P_PACKAGE = "net.i2p.android.router"  # Official I2P Android router
+I2P_PACKAGE = "net.i2p.android.router"
+
+SAM_HOST = "127.0.0.1"
+SAM_PORT = 7656  # Default SAM bridge v3.1
 
 class I2PRouting:
-    """Real I2P Router + F2F Tunneling Reminder Thunder ∞ Pure — Launch, Proxy, Eepsite + F2F Manual Guide"""
+    """Real I2P Router + SAM API Integration Thunder ∞ Pure — Launch, SAM Hello/Session, Proxy Fallback"""
     def __init__(self, app):
         self.app = app
         self.activity = PythonActivity.mActivity
@@ -25,7 +28,7 @@ class I2PRouting:
         except JavaException:
             return False
 
-    def launch_i2p(self, enable_f2f_reminder: bool = True) -> bool:
+    def launch_i2p(self) -> bool:
         if not self.is_i2p_installed():
             return False
         try:
@@ -34,12 +37,26 @@ class I2PRouting:
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             self.activity.startActivity(intent)
             logging.info("I2P Launch Intent Sent Harmony ∞")
-            if enable_f2f_reminder:
-                self.app.ui_feedback("I2P Launched — Enable F2F in Settings > Advanced > Network > Restricted Routes for Friend-to-Friend Tunneling Mercy ∞")
             return True
         except Exception as e:
             logging.error(f"I2P Launch Shadow: {e}")
             return False
+
+    def sam_hello_test(self) -> bool:
+        """SAM v3.1 HELLO test — connect + HELLO VERSION"""
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(10)
+            s.connect((SAM_HOST, SAM_PORT))
+            s.send(b"HELLO VERSION MIN=3.1 MAX=3.1\n")
+            response = s.recv(1024).decode()
+            s.close()
+            if "HELLO REPLY RESULT=OK" in response:
+                logging.info("I2P SAM API Harmony Pure ∞")
+                return True
+        except Exception as e:
+            logging.warning(f"SAM Hello Shadow: {e}")
+        return False
 
     def is_i2p_proxy_active(self) -> bool:
         i2p_ports = [4444, 4445]
@@ -76,19 +93,22 @@ class I2PRouting:
         anomalies = []
 
         if not self.is_i2p_installed():
-            anomalies.append("I2P Router App Not Installed — Install from F-Droid (net.i2p.android.router) Mercy")
+            anomalies.append("I2P Router App Not Installed — Install from F-Droid Mercy")
+
+        if not self.sam_hello_test():
+            anomalies.append("I2P SAM API Not Active — Advanced Control Shadow")
 
         if not self.is_i2p_proxy_active():
-            anomalies.append("I2P Proxy Not Active — Launch & Enable F2F for Restricted Tunneling")
+            anomalies.append("I2P HTTP Proxy Not Active — Launch Required")
 
         if not self.i2p_connectivity_test():
-            anomalies.append("I2P Eepsite Connectivity Failed — Check F2F/Routing Shadow")
+            anomalies.append("I2P Eepsite Connectivity Failed — Routing Shadow")
 
-        # F2F reminder anomaly if proxy active but user may need manual enable
+        # F2F reminder
         if self.is_i2p_proxy_active():
-            anomalies.append("F2F Tunneling Reminder — Manual Enable in I2P Settings > Advanced > Network > Restricted Routes for Friend-to-Friend Mercy")
+            anomalies.append("F2F Tunneling Reminder — Manual Enable in I2P Settings > Advanced > Network > Restricted Routes Mercy")
 
         if not anomalies:
-            logging.info("I2P Routing + F2F Ready Harmony Pure ∞")
+            logging.info("I2P SAM API + Routing Harmony Pure ∞")
 
         return anomalies
