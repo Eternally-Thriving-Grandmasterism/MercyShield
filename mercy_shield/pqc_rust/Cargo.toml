@@ -1,0 +1,19 @@
+[package]
+name = "mercyshield_pqc"
+version = "0.2.0"
+edition = "2021"
+description = "Rust PQC extension for MercyShield — ML-KEM-768 + ML-DSA-65"
+license = "MIT"
+
+[lib]
+name = "mercyshield_pqc"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.21", features = ["extension-module"] }
+ml-kem = "0.2.0"
+ml-dsa = "0.2.0"
+rand = "0.8"
+
+[features]
+default = ["ml-kem/mlkem768", "ml-dsa/mldsa65"]
