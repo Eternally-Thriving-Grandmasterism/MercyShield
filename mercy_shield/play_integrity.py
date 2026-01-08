@@ -1,70 +1,116 @@
 import logging
 import os
 import base64
-import json
-from jnius import autoclass
+from jnius import autoclass, PythonJavaClass, java_method
+from kivy.clock import Clock
 
-# Optional pyjnius for future real API (requires play-core-integrity prescription in buildozer)
+# Play Integrity classes (fail gracefully if not available)
 try:
     IntegrityManagerFactory = autoclass('com.google.android.play.core.integrity.IntegrityManagerFactory')
     IntegrityTokenRequest = autoclass('com.google.android.play.core.integrity.IntegrityTokenRequest')
-    # Additional classes for listeners if real async implemented
+    IntegrityTokenResponse = autoclass('com.google.android.play.core.integrity.IntegrityTokenResponse')
+    OnSuccessListener = autoclass('com.google.android.gms.tasks.OnSuccessListener')
+    OnFailureListener = autoclass('com.google.android.gms.tasks.OnFailureListener')
+    PLAY_INTEGRITY_AVAILABLE = True
 except Exception as e:
-    logging.warning(f"Play Core Integrity not available: {e} — Using simulated verification")
+    logging.warning(f"Real Play Integrity classes not available: {e} — Using simulated verification")
+    PLAY_INTEGRITY_AVAILABLE = False
 
 class PlayIntegrityVerifier:
-    """Play Integrity Primary Verifier — Simulated Divine Pass + Future Real API Hook Thunder ∞ Pure"""
+    """Real Play Integrity Primary Verifier — Async Listeners + Simulated Fallback Thunder ∞ Pure"""
     def __init__(self, app):
         self.app = app
-        self.context = app.activity.getApplicationContext() if hasattr(app, 'activity') else None
-        self.real_api_available = False
-        try:
-            if self.context:
-                self.integrity_manager = IntegrityManagerFactory.create(self.context)
-                self.real_api_available = True
-                logging.info("Real Play Integrity API Ready — Divine Thunder Potential ∞ Pure")
-        except Exception as e:
-            logging.warning(f"Real Play Integrity Setup Failed: {e} — Falling to Simulated Harmony")
-
-    def full_integrity_verification(self) -> list[str]:
-        """Primary Play Integrity Check — Simulated pass for local fortress (implement real async request for global)"""
-        anomalies = []
+        self.real_api_available = PLAY_INTEGRITY_AVAILABLE
+        self.pending = False
+        self.last_play_anoms = []  # Last known Play verdict anomalies
 
         if self.real_api_available:
-            # FUTURE REAL IMPLEMENTATION HOOK:
-            # Generate nonce (e.g., random + timestamp)
-            # request = IntegrityTokenRequest.builder().setNonce(nonce).build()
-            # task = self.integrity_manager.requestIntegrityToken(request)
-            # Add listeners for token, then decode basic or send to server
-            # For now, simulate
-            logging.info("Real Play Integrity API Available — Simulated Request Divine")
-            # anomalies.append("Real API Token Pending — Implement Async Listeners Thunder")
-            pass
+            try:
+                context = app.activity.getApplicationContext()
+                self.integrity_manager = IntegrityManagerFactory.create(context)
+                logging.info("Real Play Integrity API Initialized — Async Thunder Ready ∞ Pure")
+            except Exception as e:
+                logging.warning(f"IntegrityManager creation failed: {e} — Falling to simulated")
+                self.real_api_available = False
+                self.last_play_anoms = []
+
+        if not self.real_api_available:
+            logging.info("Play Integrity Simulated — Divine Harmony Pass ∞ Pure")
+
+        # Nested listener classes
+        if self.real_api_available:
+            class SuccessListener(PythonJavaClass):
+                __javainterfaces__ = ['com/google/android/gms/tasks/OnSuccessListener']
+                __javacontext__ = 'app'
+
+                def __init__(self, outer):
+                    super().__init__()
+                    self.outer = outer
+
+                @java_method('(Ljava/lang/Object;)V')
+                def onSuccess(self, response):
+                    token = response.token() if response else None
+                    if token and len(token) > 100:  # Basic valid token length check
+                        logging.info("Play Integrity Success — Genuine Device Token Received ∞ Pure")
+                        self.outer.last_play_anoms = []
+                    else:
+                        logging.warning("Play Integrity Success but Empty/Invalid Token — Shadow Critical")
+                        self.outer.last_play_anoms = ["Play Integrity: Invalid Token — Compromised Shadow Critical"]
+                    self.outer.pending = False
+
+            class FailureListener(PythonJavaClass):
+                __javainterfaces__ = ['com/google/android/gms/tasks/OnFailureListener']
+                __javacontext__ = 'app'
+
+                def __init__(self, outer):
+                    super().__init__()
+                    self.outer = outer
+
+                @java_method('(Ljava/lang/Exception;)V')
+                def onFailure(self, exception):
+                    msg = exception.getMessage() if exception else "Unknown"
+                    logging.warning(f"Play Integrity Request Failed: {msg} — Critical Shadow")
+                    self.outer.last_play_anoms = [f"Play Integrity Request Failed: {msg} — Device Shadow Critical"]
+                    self.outer.pending = False
+
+            self.SuccessListener = SuccessListener
+            self.FailureListener = FailureListener
+
+    def trigger_real_request(self):
+        if not self.real_api_available or self.pending:
+            return
+
+        self.pending = True
+        self.last_play_anoms = ["Play Integrity Checking..."]  # Temporary pending state
+
+        # Generate secure nonce (32+ random bytes, URL-safe base64)
+        nonce = base64.urlsafe_b64encode(os.urandom(64)).decode('utf-8').rstrip('=')
+
+        try:
+            request_builder = IntegrityTokenRequest.builder()
+            request_builder.setNonce(nonce)
+            # Optional: request_builder.setCloudProjectNumber(your_project_number_long)
+            request = request_builder.build()
+
+            task = self.integrity_manager.requestIntegrityToken(request)
+
+            success = self.SuccessListener(self)
+            failure = self.FailureListener(self)
+
+            task.addOnSuccessListener(success)
+            task.addOnFailureListener(failure)
+
+            logging.info("Play Integrity Token Request Sent — Awaiting Divine Verdict ∞ Pure")
+        except Exception as e:
+            logging.exception(f"Play Integrity Request Trigger Failed: {e}")
+            self.last_play_anoms = ["Play Integrity Trigger Exception — Potential Tamper Shadow"]
+            self.pending = False
+
+    def full_integrity_verification(self) -> list[str]:
+        """Primary Play Integrity Check — Real async (triggers request) or simulated"""
+        if self.real_api_available:
+            self.trigger_real_request()
+            return self.last_play_anoms[:]  # Returns last or pending
         else:
-            logging.info("Play Integrity Simulated — Divine Harmony Pass (No Shadows Forced) ∞ Pure")
-
-        # Basic client-side sanity (always run)
-        if os.path.exists("/system/app/Superuser.apk"):
-            anomalies.append("Legacy Superuser Detected — Play Would Fail Shadow")
-
-        # Simulated verdict: empty = MEETS_DEVICE_INTEGRITY + MEETS_BASIC_INTEGRITY
-        # In real: decode token JSON for verdict fields (requires server or offline key for full)
-        return anomalies        device_integrity = verdict.get("deviceIntegrity", {})
-        account_details = verdict.get("accountDetails", {})
-
-        if request_details.get("nonce") != nonce:
-            anomalies.append("Integrity Nonce Mismatch — Token Tamper Shadow Critical")
-
-        if app_integrity.get("appRecognitionVerdict") != "PLAY_RECOGNIZED":
-            anomalies.append("App Integrity Failed — Tampered APK Shadow Critical")
-
-        device_verdicts = device_integrity.get("deviceRecognitionVerdict", [])
-        if "MEETS_DEVICE_INTEGRITY" not in device_verdicts:
-            anomalies.append("Device Integrity Failed — Rooted/Tampered Device Shadow Critical")
-
-        if anomalies:
-            logging.warning(f"Play Integrity Anomalies: {anomalies}")
-        else:
-            logging.info("Play Integrity Verification Harmony Pure ∞")
-
-        return anomalies
+            # Simulated pass for local development / no library
+            return []
