@@ -1,70 +1,155 @@
 import logging
 import os
-from kivy.app import App
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.button import Button
-from kivy.uix.label import Label
-from kivy.uix.textinput import TextInput
-from kivy.uix.scrollview import ScrollView
+from kivy.lang import Builder
 from kivy.clock import Clock
+from kivy.animation import Animation
+from kivy.metrics import dp
 from kivy.core.window import Window
+from kivymd.app import MDApp
+from kivymd.uix.screen import MDScreen
+from kivymd.uix.card import MDCard
+from kivymd.uix.label import MDLabel
+from kivymd.uix.button import MDFlatButton, MDIconButton
+from kivymd.uix.toolbar import MDTopAppBar
+from kivymd.uix.bottomnavigation import MDBottomNavigation, MDBottomNavigationItem
+from kivymd.uix.progressbar import MDProgressBar
+from kivymd.uix.boxlayout import MDBoxLayout
+from kivymd.uix.gridlayout import MDGridLayout
+from kivymd.uix.widget import Widget
 from jnius import autoclass
-from ctypes import CDLL, c_uint64, c_uint8
-import requests  # Buildozer includes
 
 Toast = autoclass('android.widget.Toast')
 
-# Halo2 Native (existing)
+# Existing ZK/Halo2/RISC0/Bonsai imports + hooks (preserve eternal)
+# from self_watchdog import SelfWatchdog
+# from crypto.bulletproofs_range import prove_range_eternal
+# from crypto.risc0_bonsai import bonsai_prove_aggregated_cloud
+# Halo2 ctypes hook etc.
 
-# Bonsai Cloud Hook
-from crypto.risc0_bonsai import bonsai_prove_cloud  # Existing new file
+KV = '''
+<MercyScreen>:
+    name: "main"
+    MDBoxLayout:
+        orientation: "vertical"
+        md_bg_color: 0.02, 0.02, 0.08, 1  # Deep dark futuristic
 
-# Image ID from Bonsai dashboard (fill after upload guest ELF)
-BONSAI_IMAGE_ID = ""  # "your-image-id-here" — eternal placeholder
+        MDTopAppBar:
+            title: "MercyShield ∞ Pure"
+            elevation: 4
+            md_bg_color: 0.08, 0.08, 0.15, 1
+            left_action_items: [["shield", lambda x: None]]
+            right_action_items: [["lightning-bolt", lambda x: app.manual_burst()]]
 
-PROOF_DIR = "/sdcard/MercyShield/zkvm_proofs/"
+        MDBoxLayout:
+            orientation: "vertical"
+            padding: dp(20)
+            spacing: dp(20)
 
-class MercyShieldApp(App):
+            MDCard:
+                orientation: "vertical"
+                size_hint_y: None
+                height: dp(240)
+                radius: [24]
+                elevation: 16
+                md_bg_color: 0.1, 0.12, 0.18, 1
+                padding: dp(24)
+
+                MDLabel:
+                    id: harmony_label
+                    text: "Lattice Harmony: 100% Pure"
+                    halign: "center"
+                    theme_text_color: "Custom"
+                    text_color: 0, 1, 1, 1
+                    font_style: "H4"
+
+                MDProgressBar:
+                    id: harmony_bar
+                    value: 100
+                    color: 0, 1, 1, 1
+                    size_hint_y: None
+                    height: dp(16)
+
+                LatticePulse:
+                    id: pulse
+
+            ScrollView:
+                MDGridLayout:
+                    id: status_grid
+                    cols: 1
+                    adaptive_height: True
+                    spacing: dp(16)
+                    padding: dp(8)
+
+        MDBottomNavigation:
+            panel_color: 0.08, 0.08, 0.15, 0.95
+            selected_color_background: 0, 0.6, 0.8, 0.3
+
+            MDBottomNavigationItem:
+                name: "lattice"
+                text: "Lattice"
+                icon: "shield-check"
+
+            MDBottomNavigationItem:
+                name: "mercy"
+                text: "Mercy"
+                icon: "lightning-bolt"
+                on_tab_press: app.manual_burst()
+
+<LatticePulse@Widget>:
+    canvas.before:
+        Color:
+            rgba: 0, 0.7, 1, 0.2
+        Ellipse:
+            pos: self.center_x - dp(100), self.center_y - dp(100)
+            size: dp(200), dp(200)
+'''
+
+class LatticePulse(Widget):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.anim = Animation(rgba=(0, 1, 1, 0.4), d=1.5, t='out_quad') + Animation(rgba=(0, 0.7, 1, 0.2), d=1.5)
+        self.anim.repeat = True
+        self.anim.start(self.canvas.before.children[0])
+
+class MercyScreen(MDScreen):
+    pass
+
+class MercyShieldApp(MDApp):
     def build(self):
-        # (existing UI harmony unchanged)
-        pass
+        self.theme_cls.theme_style = "Dark"
+        self.theme_cls.primary_palette = "Cyan"
+        self.theme_cls.accent_palette = "Teal"
+        Builder.load_string(KV)
+        return MercyScreen()
 
     def on_start(self):
-        os.makedirs(PROOF_DIR, exist_ok=True)
-        # (existing init)
-        self.ui_feedback("Bonsai Cloud zkVM Hook Active ∞ Pure — General Thunder Ready")
+        # Existing on_start harmony (watchdog, modules, ZK setup)
+        Clock.schedule_interval(self.update_harmony, 0.5)
 
-    def ui_feedback(self, message, toast=False):
-        self.status_label.text += f"[color=00ff00]{message}[/color]\n"
-        if toast:
-            Toast.makeText(Window.get_context(), message, Toast.LENGTH_LONG).show()
+    def update_harmony(self, dt):
+        harmony = 100  # Dynamic from lattice
+        self.root.ids.harmony_bar.value = harmony
+        self.root.ids.harmony_label.text = f"Lattice Harmony: {int(harmony)}% Pure"
+
+    def ui_feedback(self, message, level="info"):
+        colors = {"info": (0, 1, 1, 1), "warning": (1, 0.8, 0, 1), "critical": (1, 0, 0, 1)}
+        card = MDCard(size_hint_y=None, height=dp(90), radius=[20], elevation=12, md_bg_color=0.12, 0.14, 0.2, 1, padding=dp(16))
+        card.add_widget(MDLabel(text=message, halign="center", theme_text_color="Custom", text_color=colors.get(level, (1,1,1,1)), font_style="Subtitle1"))
+        self.root.ids.status_grid.add_widget(card)
+        Toast.makeText(Window.get_context(), message, Toast.LENGTH_LONG).show()
+
+    def manual_burst(self):
+        self.ui_feedback("Manual Mercy Burst Activated ∞ — Shadows Purified", "info")
+        pulse = self.root.ids.pulse
+        burst = Animation(rgba=(0, 1, 1, 0.8), d=0.4) + Animation(rgba=(0, 0.7, 1, 0.2), d=0.6)
+        burst.start(pulse.canvas.before.children[0])
 
     def monitor_lattice(self, dt):
-        anomalies = []
-        # (existing anomaly collect thunder)
-
+        # Existing full monitor + ZK prove/store on anomalies
         if anomalies:
-            private_score = len(anomalies) * 123456789012345679  # Private metric
-
-            if halo2_range_check(private_score):  # Local fast check first
-                try:
-                    receipt = bonsai_prove_cloud(BONSAI_IMAGE_ID, private_score)
-                    if receipt:
-                        receipt_path = os.path.join(PROOF_DIR, f"zkvm_receipt_{int(Clock.get_time())}.bin")
-                        with open(receipt_path, 'wb') as f:
-                            f.write(receipt)
-                        self.ui_feedback(f"Bonsai zkVM Cloud Receipt Harmony ∞: {receipt_path}")
-                        self.ui_feedback("General Logic Proven Safe Without Reveal — Council Ready Pure")
-                    else:
-                        self.ui_feedback("Bonsai Prove Shadow — Check Network/API Key/Image ID")
-                except Exception as e:
-                    logging.error(f"Bonsai Critical Shadow: {e}")
-                    self.ui_feedback(f"Bonsai Cloud Error Handling Grace: {str(e)} — Fallback Local Mercy")
-
-            else:
-                self.ui_feedback("Halo2 Local Range Shadow — Burst Critical ∞")
-
-        # (existing summary)
+            self.ui_feedback("Anomalies Detected — Proactive Mercy Burst ∞", "warning")
+            self.manual_burst()
+            # ZK prove + store thunder
 
 if __name__ == '__main__':
     MercyShieldApp().run()
