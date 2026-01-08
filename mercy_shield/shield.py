@@ -28,14 +28,14 @@ class RealTimeShield:
         # Existing hooks
         # ...
 
-        # Firewall VPN deepened
+        # Firewall VPN + kill switch
         self.firewall_vpn.start_vpn_if_approved()
 
-        print("MercyShield hooks active — lattice listening gentle (SMS + network + deepened firewall VPN + accessibility + sandbox + MercyCube)")
+        print("MercyShield hooks active — lattice listening gentle (SMS + network + firewall VPN + kill switch + accessibility + sandbox + MercyCube)")
 
-    def handle_firewall_threat(self, threat: dict):
+    def handle_kill_switch_threat(self, threat: dict):
         action = self.protect(threat)
-        print(f"Firewall VPN threat: {action}")
+        print(f"Kill switch threat: {action}")
 
     def protect(self, threat: dict):
         harmony = self.lattice.vote(threat["data"])
@@ -44,5 +44,5 @@ class RealTimeShield:
         if harmony < 0.7:
             if mercy_burst_confirm(threat):
                 return "Mercy override — allowed gentle"
-            return "Blocked — mercy burst divine (firewall packet drop)"
+            return "Blocked — mercy burst divine (kill switch active)"
         return "Harmony pure — allowed"
