@@ -7,6 +7,7 @@ from mercy_shield.network_threat import MercyNetworkThreat
 from mercy_shield.firewall_vpn import MercyFirewallVPN
 from mercy_shield.accessibility_service import MercyAccessibilityService
 from mercy_shield.app_sandbox import MercyAppSandbox
+from mercy_shield.hardware import MercyCubeHardware
 
 Intent = autoclass('android.content.Intent')
 Context = autoclass('android.content.Context')
@@ -15,6 +16,7 @@ class RealTimeShield:
     def __init__(self, lattice):
         self.lattice = lattice
         self.context = autoclass('org.kivy.android.PythonActivity').mActivity
+        self.hardware = MercyCubeHardware()
         self.contact_check = MercyContactCheck(self.context)
         self.network_threat = MercyNetworkThreat(self.context, self.lattice)
         self.firewall_vpn = MercyFirewallVPN(self.context, self.lattice)
@@ -38,7 +40,7 @@ class RealTimeShield:
         # App sandbox monitor
         self.app_sandbox.start_monitor()
 
-        print("MercyShield hooks active — lattice listening gentle (SMS + network + firewall + accessibility + app sandboxing)")
+        print("MercyShield hooks active — lattice listening gentle (SMS + network + firewall + accessibility + app sandboxing + MercyCube hardware)")
 
     def handle_app_threat(self, threat: dict):
         action = self.protect(threat)
@@ -50,8 +52,10 @@ class RealTimeShield:
 
     def protect(self, threat: dict):
         harmony = self.lattice.vote(threat["data"])
+        mode = "MercyCube offline 7W" if self.hardware.is_cube else "Mobile"
+        print(f"Threat: {threat['desc']} | Harmony: {harmony:.4f} | Mode: {mode}")
         if harmony < 0.7:
             if mercy_burst_confirm(threat):
                 return "Mercy override — allowed gentle"
-            return "Blocked — mercy burst divine (sandbox/perms/network/overlay revoked)"
+            return "Blocked — mercy burst divine (sandbox/perms/network/overlay/thermal revoked)"
         return "Harmony pure — allowed"
