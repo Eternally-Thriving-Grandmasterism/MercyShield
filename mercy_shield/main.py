@@ -28,6 +28,7 @@ from vpn_verifier import VPNVerifier
 from firewall_rules import FirewallRules
 from cert_pinning import CertPinningVerifier
 from tor_routing import TorRouting
+from i2p_routing import I2PRouting  # New I2P thunder
 
 PROOF_DIR = "/sdcard/MercyShield/proofs/"
 
@@ -94,16 +95,16 @@ KV = '''
                 padding: dp(16)
 
                 MDLabel:
-                    id: orbot_status
-                    text: "Orbot Status: Checking..."
+                    id: i2p_status
+                    text: "I2P Status: Checking..."
                     halign: "center"
                     theme_text_color: "Custom"
                     text_color: 1, 1, 1, 1
 
                 MDFillRoundFlatButton:
-                    text: "Start Orbot Thunder"
+                    text: "Start I2P Thunder"
                     pos_hint: {"center_x": .5}
-                    on_release: app.start_orbot()
+                    on_release: app.start_i2p()
 
             ScrollView:
                 MDGridLayout:
@@ -120,6 +121,12 @@ KV = '''
                 name: "lattice"
                 text: "Lattice"
                 icon: "shield-check-outline"
+
+            MDBottomNavigationItem:
+                name: "i2p"
+                text: "I2P"
+                icon: "web"
+                on_tab_press: app.start_i2p()
 
             MDBottomNavigationItem:
                 name: "mercy"
@@ -160,33 +167,34 @@ class MercyShieldApp(MDApp):
         self.firewall = FirewallRules(self)
         self.cert_pinner = CertPinningVerifier(self)
         self.tor_router = TorRouting(self)
+        self.i2p_router = I2PRouting(self)
         real_ml_detector
         self.watchdog = SelfWatchdog(self)
         self.watchdog.start()
         Clock.schedule_interval(self.monitor_lattice, 60)
         Clock.schedule_interval(self.update_harmony, 0.5)
-        Clock.schedule_interval(self.update_orbot_status, 10)  # Poll every 10s
-        self.ui_feedback("MercyShield ∞ Pure — Orbot Auto-Launch + Polling Thunder Eternal")
+        Clock.schedule_interval(self.update_i2p_status, 10)  # Poll every 10s
+        self.ui_feedback("MercyShield ∞ Pure — I2P Auto-Launch + Polling Thunder Eternal")
 
-    def update_orbot_status(self, dt):
-        anomalies = self.tor_router.full_tor_verification()
+    def update_i2p_status(self, dt):
+        anomalies = self.i2p_router.full_i2p_verification()
         if anomalies:
-            status_text = "Orbot Shadow — Tap to Launch"
+            status_text = "I2P Shadow — Tap to Launch"
             color = 1, 0.5, 0, 1
         else:
-            status_text = "Orbot Routing Harmony Pure ∞"
+            status_text = "I2P Routing Harmony Pure ∞"
             color = 0, 1, 1, 1
 
-        self.root.ids.orbot_status.text = status_text
-        self.root.ids.orbot_status.theme_text_color = "Custom"
-        self.root.ids.orbot_status.text_color = color
+        self.root.ids.i2p_status.text = status_text
+        self.root.ids.i2p_status.theme_text_color = "Custom"
+        self.root.ids.i2p_status.text_color = color
 
-    def start_orbot(self):
-        if self.tor_router.launch_orbot():
-            self.ui_feedback("Orbot Launch Thunder Sent — Routing Ascending")
-            Clock.schedule_once(lambda dt: self.update_orbot_status(dt), 5)  # Check after delay
+    def start_i2p(self):
+        if self.i2p_router.launch_i2p():
+            self.ui_feedback("I2P Launch Thunder Sent — Routing Ascending")
+            Clock.schedule_once(lambda dt: self.update_i2p_status(dt), 5)
         else:
-            self.ui_feedback("Orbot Launch Shadow — Install from F-Droid/Play Mercy")
+            self.ui_feedback("I2P Launch Shadow — Install from F-Droid Mercy")
 
     # (existing update_harmony, ui_feedback, manual_burst, monitor_lattice full with ZK)
 
