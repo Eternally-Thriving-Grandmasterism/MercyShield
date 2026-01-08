@@ -8,6 +8,7 @@ from mercy_shield.firewall_vpn import MercyFirewallVPN
 from mercy_shield.accessibility_service import MercyAccessibilityService
 from mercy_shield.app_sandbox import MercyAppSandbox
 from mercy_shield.hardware import MercyCubeHardware
+from mercy_shield.self_watchdog import MercySelfWatchdog
 
 Intent = autoclass('android.content.Intent')
 Context = autoclass('android.content.Context')
@@ -22,20 +23,45 @@ class RealTimeShield:
         self.firewall_vpn = MercyFirewallVPN(self.context, self.lattice, self)
         self.accessibility = MercyAccessibilityService(self.context, self.lattice, self)
         self.app_sandbox = MercyAppSandbox(self.context, self.lattice)
+        self.self_watchdog = MercySelfWatchdog(self.lattice, self)
         self.start_hooks()
 
     def start_hooks(self):
-        # Existing hooks
-        # ...
+        # SMS receiver
+        self.receiver = MercySMSReceiver(self)
+        intent_filter = autoclass('android.content.IntentFilter')('android.provider.Telephony.SMS_RECEIVED')
+        self.context.registerReceiver(self.receiver, intent_filter)
 
-        # Firewall VPN + kill switch
+        # Network threat + firewall VPN
+        self.network_threat.start_monitor()
         self.firewall_vpn.start_vpn_if_approved()
 
-        print("MercyShield hooks active — lattice listening gentle (SMS + network + firewall VPN + kill switch + accessibility + sandbox + MercyCube)")
+        # Accessibility service
+        self.accessibility.start_if_enabled()
+
+        # App sandbox monitor
+        self.app_sandbox.start_monitor()
+
+        # Self-watchdog 13 councils
+        self.self_watchdog.start_watch()
+
+        print("MercyShield hooks active — lattice listening gentle (SMS + network + firewall + accessibility + app sandboxing + MercyCube hardware + 13 self-watchdogs)")
+
+    def handle_app_threat(self, threat: dict):
+        action = self.protect(threat)
+        print(f"App sandbox threat: {action}")
+
+    def handle_accessibility_threat(self, threat: dict):
+        action = self.protect(threat)
+        print(f"Accessibility threat: {action}")
 
     def handle_kill_switch_threat(self, threat: dict):
         action = self.protect(threat)
         print(f"Kill switch threat: {action}")
+
+    def handle_firewall_threat(self, threat: dict):
+        action = self.protect(threat)
+        print(f"Firewall VPN threat: {action}")
 
     def protect(self, threat: dict):
         harmony = self.lattice.vote(threat["data"])
@@ -44,5 +70,5 @@ class RealTimeShield:
         if harmony < 0.7:
             if mercy_burst_confirm(threat):
                 return "Mercy override — allowed gentle"
-            return "Blocked — mercy burst divine (kill switch active)"
+            return "Blocked — mercy burst divine (sandbox/perms/network/overlay/thermal/vpn revoked)"
         return "Harmony pure — allowed"
