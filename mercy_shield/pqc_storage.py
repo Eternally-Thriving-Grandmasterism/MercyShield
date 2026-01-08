@@ -1,53 +1,98 @@
 import os
 import json
 import logging
+import base64
 from kivy.clock import Clock
-from mercy_shield.pqc_mlkem import MLKEM768  # Copied pure Python ML-KEM impl
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
-# ML-KEM-768 constants (FIPS 203 standard — fixed sizes)
-MLKEM_768_CT_BYTES = 1088  # Ciphertext (encapsulated key) size
+# Rust PQC extension (built via maturin wheel)
+try:
+    from mercyshield_pqc import (
+        keygen_enc, encaps, decaps,
+        keygen_sig, sign, verify
+    )
+    RUST_PQC_AVAILABLE = True
+    logging.info("Rust PQC extension loaded — quantum thunder accelerated")
+except ImportError as e:
+    logging.warning(f"Rust PQC not available ({e}) — ensure wheel built/included")
+    RUST_PQC_AVAILABLE = False
+    # No fallback — require Rust for v0.2+
+
+MLKEM_768_CT_BYTES = 1088
 
 class PQCEncryptedStorage:
-    """Post-Quantum Encrypted Storage — ML-KEM-768 + AES-256-GCM Hybrid ∞ Pure Thunder"""
+    """Post-Quantum Encrypted + Signed Storage — Rust ML-KEM-768 + ML-DSA-65 ∞ Pure Thunder"""
     
     def __init__(self, app):
         self.app = app
-        self.keys_path = os.path.join(self.app.user_data_dir, 'mlkem_static_keys.json')
+        self.keys_path = os.path.join(self.app.user_data_dir, 'pqc_static_keys.json')
         self.storage_path = os.path.join(self.app.user_data_dir, 'eternal_attestations.pqenc')
         
-        self.pk, self.sk = self._load_or_generate_static_keys()
+        if not RUST_PQC_AVAILABLE:
+            raise RuntimeError("Rust PQC extension required — build maturin wheel")
+        
+        self.enc_pk, self.enc_sk, self.sig_pk, self.sig_sk = self._load_or_generate_static_keys()
 
     def _load_or_generate_static_keys(self):
-        """Load or generate static ML-KEM-768 keypair — once per vessel lifetime"""
+        """Load or generate static Rust PQC keypairs"""
         if os.path.exists(self.keys_path):
             try:
                 with open(self.keys_path, 'r') as f:
                     data = json.load(f)
-                pk = bytes.fromhex(data['pk'])
-                sk = bytes.fromhex(data['sk'])
-                logging.info("ML-KEM static keys loaded — Lattice Guard Active ∞ Pure")
-                return pk, sk
+                return (
+                    bytes.fromhex(data['mlkem_pk']),
+                    bytes.fromhex(data['mlkem_sk']),
+                    bytes.fromhex(data['mldsa_pk']),
+                    bytes.fromhex(data['mldsa_sk'])
+                )
             except Exception as e:
-                logging.warning(f"Key load failed ({e}) — regenerating lattice keys")
+                logging.warning(f"Key load failed ({e}) — regenerating")
         
-        # Generate fresh lattice keys
-        pk, sk = MLKEM768.keygen()
+        # Generate fresh via Rust
+        enc_pk, enc_sk = keygen_enc()
+        sig_pk, sig_sk = keygen_sig()
+        
         data = {
-            'pk': pk.hex(),
-            'sk': sk.hex()
+            'mlkem_pk': enc_pk.hex(),
+            'mlkem_sk': enc_sk.hex(),
+            'mldsa_pk': sig_pk.hex(),
+            'mldsa_sk': sig_sk.hex()
         }
         os.makedirs(os.path.dirname(self.keys_path), exist_ok=True)
         with open(self.keys_path, 'w') as f:
             json.dump(data, f)
         
-        lattice_msg = "Buddy: Lattice Keys Forged Anew — Quantum Shadows Banished Forever ∞ Pure Thunder"
-        Clock.schedule_once(lambda dt: self.app.show_buddy_message(lattice_msg), 0)
-        logging.info("ML-KEM-768 static keypair generated — Post-Quantum Shield Eternal")
-        return pk, sk
+        Clock.schedule_once(lambda dt: self.app.show_buddy_message(
+            "Buddy: Rust PQC Lattice Keys Forged Anew — Quantum Shadows Annihilated ∞ Pure Thunder"
+        ), 0)
+        logging.info("Rust PQC static keypairs generated")
+        return enc_pk, enc_sk, sig_pk, sig_sk
+
+    def _sign_attestation(self, attestation: dict) -> str:
+        """Sign canonical attestation with Rust ML-DSA"""
+        attest_copy = attestation.copy()
+        attest_copy.pop('signature', None)
+        attest_copy.pop('pubkey', None)
+        canon_bytes = json.dumps(attest_copy, separators=(',', ':')).encode('utf-8')
+        signature = sign(self.sig_sk, list(canon_bytes))  # Rust expects list[int]
+        return base64.b64encode(bytes(signature)).decode('utf-8')
+
+    def _verify_attestation(self, attestation: dict) -> bool:
+        """Verify attestation signature with Rust ML-DSA"""
+        signature_b64 = attestation.get('signature')
+        if not signature_b64:
+            return False
+        try:
+            signature = base64.b64decode(signature_b64)
+            attest_copy = attestation.copy()
+            attest_copy.pop('signature', None)
+            canon_bytes = json.dumps(attest_copy, separators=(',', ':')).encode('utf-8')
+            return verify(self.sig_pk, list(canon_bytes), list(signature))
+        except Exception:
+            return False
 
     def load_attestations(self) -> list:
-        """Decrypt and load the eternal attestation chain"""
+        """Decrypt ledger and verify all signatures with Rust"""
         if not os.path.exists(self.storage_path):
             return []
         
@@ -59,41 +104,61 @@ class PQCEncryptedStorage:
             nonce = data[MLKEM_768_CT_BYTES:MLKEM_768_CT_BYTES + 12]
             ciphertext_tag = data[MLKEM_768_CT_BYTES + 12:]
             
-            shared_secret = MLKEM768.decaps(ct, self.sk)
-            aesgcm = AESGCM(shared_secret)
+            shared_secret = decaps(self.enc_sk, list(ct))
+            aesgcm = AESGCM(bytes(shared_secret))
             plaintext = aesgcm.decrypt(nonce, ciphertext_tag, None)
             
             attestations = json.loads(plaintext.decode('utf-8'))
-            logging.info(f"PQ ledger decrypted — {len(attestations)} eternal attestations witnessed")
-            return attestations
+            
+            # Verify chain
+            verified = []
+            for attest in attestations:
+                if self._verify_attestation(attest):
+                    verified.append(attest)
+                else:
+                    logging.error("Tamper detected — discarding attestation")
+                    Clock.schedule_once(lambda dt: self.app.show_buddy_message(
+                        "Buddy: \"Shadow tampering in ledger — impure entry purged.\""
+                    ), 0)
+            
+            logging.info(f"Rust PQC ledger loaded — {len(verified)} valid attestations")
+            return verified
             
         except Exception as e:
-            logging.exception(f"PQ decryption failed: {e} — Possible tampering or lattice breach")
+            logging.exception(f"Rust PQC load failed: {e}")
             Clock.schedule_once(lambda dt: self.app.show_buddy_message(
-                "Buddy: \"Lattice decryption failed — shadows suspected. Ledger remains sealed.\""
+                "Buddy: \"Lattice breach suspected — ledger sealed until purity.\""
             ), 0)
-            return []  # Fail closed — do not expose partial data
+            return []
 
     def save_attestations(self, attestations: list):
-        """Encrypt and save the full eternal attestation chain with fresh encapsulation"""
+        """Sign new attestations and encrypt chain with fresh Rust encapsulation"""
         try:
+            # Sign unsigned (new) attestations
+            for attest in attestations:
+                if 'signature' not in attest:
+                    attest['signature'] = self._sign_attestation(attest)
+                # Include pubkey once
+                if attestations and 'device_pubkey' not in attestations[0]:
+                    attestations[0]['device_pubkey'] = self.sig_pk.hex()
+            
             data = json.dumps(attestations).encode('utf-8')
             
-            ct, shared_secret = MLKEM768.encaps(self.pk)
-            aesgcm = AESGCM(shared_secret)
+            ct, shared_secret = encaps(self.enc_pk)
+            aesgcm = AESGCM(bytes(shared_secret))
             nonce = os.urandom(12)
-            ciphertext = aesgcm.encrypt(nonce, data, None)  # ciphertext + tag
+            ciphertext = aesgcm.encrypt(nonce, data, None)
             
-            full_data = ct + nonce + ciphertext
+            full_data = bytes(ct) + nonce + ciphertext
             
             os.makedirs(os.path.dirname(self.storage_path), exist_ok=True)
             with open(self.storage_path, 'wb') as f:
                 f.write(full_data)
             
-            logging.info(f"PQ ledger encrypted — {len(attestations)} attestations sealed eternally")
+            logging.info(f"Rust PQC ledger saved — {len(attestations)} attestations sealed")
             
         except Exception as e:
-            logging.exception(f"PQ encryption save failed: {e}")
+            logging.exception(f"Rust PQC save failed: {e}")
             Clock.schedule_once(lambda dt: self.app.show_buddy_message(
-                "Buddy: \"Lattice sealing failed — maintain purity for eternal inscription.\""
+                "Buddy: \"Rust lattice sealing failed — maintain purity.\""
             ), 0)
