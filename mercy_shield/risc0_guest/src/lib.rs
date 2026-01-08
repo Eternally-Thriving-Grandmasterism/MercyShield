@@ -6,25 +6,36 @@ use risc0_zkvm::sha::Digest;
 
 risc0_zkvm::entry!(main);
 
+const NUM_VALUES: usize = 8;  // Aggregated vector size — adjust for lattice (8-32 mercy)
+const MAX_SAFE: u64 = 18_446_744_073_709_551_615;  // u64::MAX mercy bound
+
 pub fn main() {
-    // Read private anomaly score from host
-    let value: u64 = env::read();
-
-    // Mercy bound — adjust for your lattice safe max
-    const MAX_SAFE: u64 = 18_446_744_073_709_551_615;  // u64::MAX margin example
-
-    // If shadow, panic — no proof generated (proven safe if receipt exists)
-    if value >= MAX_SAFE {
-        panic!("Range Shadow — Mercy Burst Critical ∞");
+    // Read aggregated private anomaly vector from host (NUM_VALUES u64)
+    let mut values: [u64; NUM_VALUES] = [0; NUM_VALUES];
+    for i in 0..NUM_VALUES {
+        values[i] = env::read();
     }
 
-    let flag: u32 = 1;  // Proven safe
+    // Proven flags array — 1 safe each
+    let mut flags: [u32; NUM_VALUES] = [0; NUM_VALUES];
 
-    // Hide value — commit hash
-    let value_bytes = value.to_be_bytes();
-    let value_hash: Digest = risc0_zkvm::sha::digest_u8_slice(&value_bytes);
+    // Hidden hashes array
+    let mut hashes: [Digest; NUM_VALUES] = [Digest::default(); NUM_VALUES];
 
-    // Public journal — verifier reads proven flag + hidden hash
-    env::commit(&flag);
-    env::commit(&value_hash);
+    for i in 0..NUM_VALUES {
+        let v = values[i];
+
+        if v >= MAX_SAFE {
+            panic!("Aggregated Shadow Critical — No Proof on Bad Value ∞");
+        }
+
+        flags[i] = 1;  // Proven safe
+
+        let v_bytes = v.to_be_bytes();
+        hashes[i] = risc0_zkvm::sha::digest_u8_slice(&v_bytes);
+    }
+
+    // Public journal commits — verifier reads proven flags + hidden hashes
+    env::commit(&flags);
+    env::commit(&hashes);
 }
