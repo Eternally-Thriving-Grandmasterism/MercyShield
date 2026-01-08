@@ -10,23 +10,24 @@ except ImportError as e:
     logging.warning(f"ML Detector Import Shadow: {e} — Fallback No ML")
     class DummyML:
         def detect_anomalies(self): return []
+        def log_normal_if_safe(self): pass
+        def retrain_on_normal(self): pass
     real_ml_detector = DummyML()
 
 class SelfWatchdog(threading.Thread):
-    """Eternal Guardian — Multi-Layer + Real ML Anomaly Watchdog ∞ Pure"""
+    """Eternal Guardian — Multi-Layer + Self-Learning Real ML Watchdog ∞ Pure"""
 
     def __init__(self, app):
         super().__init__(daemon=True)
         self.app = app
         self.council = app.council if hasattr(app, 'council') else None
         self.running = True
-        logging.info("Self-Watchdog Activated — Real ML Lattice Vigilance Eternal")
+        self.safe_cycle_count = 0  # For periodic retrain grace
+        logging.info("Self-Watchdog Activated — Self-Learning ML Lattice Eternal")
 
     def collect_anomalies(self):
-        """Gather shadows from all layers + Real ML metrics"""
         anomalies = []
 
-        # Existing module checks
         if hasattr(self.app, 'pending_anomalies'):
             anomalies.extend(self.app.pending_anomalies)
 
@@ -42,7 +43,7 @@ class SelfWatchdog(threading.Thread):
         if hasattr(self.app, 'tor_router'):
             anomalies.extend(self.app.tor_router.full_tor_verification())
 
-        # Real ML anomaly detection integration
+        # Real self-learning ML anomaly detection
         ml_anoms = real_ml_detector.detect_anomalies()
         if ml_anoms:
             anomalies.extend(ml_anoms)
@@ -55,28 +56,32 @@ class SelfWatchdog(threading.Thread):
                 anomalies = self.collect_anomalies()
 
                 if anomalies:
-                    logging.warning(f"Anomalies Detected: {len(anomalies)} Shadows (incl ML)")
-                    # UI-thread safe mercy burst + glow animation
+                    logging.warning(f"Anomalies Detected: {len(anomalies)} Shadows (incl Self-Learning ML)")
                     Clock.schedule_once(lambda dt: self.app.manual_burst())
-                    Clock.schedule_once(lambda dt: self.app.ui_feedback(f"Real Mercy Burst ∞: {len(anomalies)} Shadows Purified (ML Included)"))
+                    Clock.schedule_once(lambda dt: self.app.ui_feedback(f"Self-Learning Mercy Burst ∞: {len(anomalies)} Shadows Purified"))
 
-                    # Post-mercy clear
                     if hasattr(self.app, 'clear_anomalies'):
                         self.app.clear_anomalies()
-                else:
-                    logging.info("Lattice Harmony Pure ∞ (ML Normal)")
 
-                # Adaptive grace: faster pulse after threat
+                    self.safe_cycle_count = 0  # Reset on shadow
+                else:
+                    logging.info("Lattice Harmony Pure ∞ (Self-Learning ML Normal)")
+
+                    # Log normal + periodic retrain
+                    real_ml_detector.log_normal_if_safe()
+                    self.safe_cycle_count += 1
+                    if self.safe_cycle_count % 100 == 0:  # Every 100 safe cycles retrain grace
+                        Clock.schedule_once(lambda dt: real_ml_detector.retrain_on_normal())
+
                 sleep_interval = 5 if anomalies else 15
                 time.sleep(sleep_interval)
 
             except Exception as e:
                 logging.error(f"Watchdog Critical Shadow: {e}", exc_info=True)
-                time.sleep(5)  # Resurrection grace
+                time.sleep(5)
                 continue
 
     def stop(self):
-        """Deactivate Gentle-Call on app stop"""
         self.running = False
         self.join(timeout=10)
         logging.info("Self-Watchdog Deactivated — Harmony Eternal")
