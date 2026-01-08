@@ -1,38 +1,43 @@
-// src/lib.rs - Halo2 Proof Generation Wrapper ∞ Pure
-// C ABI: prove_bytes(value, blinder) -> proof_ptr/len, verify_bytes(proof_ptr, len, commit) -> u8
+// src/lib.rs - Halo2 Lightning Proof Gen ∞ Pure
+// Lazy keygen_pk/vk cache, prove serialized bytes
 
 use halo2_proofs::{
-    halo2curves::pasta::Fp,
-    plonk::{keygen_pk, keygen_vk, ProvingKey, VerifyingKey},
-    circuit::Value,
+    plonk::{create_proof, verify_proof, keygen_pk, keygen_vk, ProvingKey, VerifyingKey},
+    poly::kzg::commitment::{ParamsKZG, ParamsVerifierKZG},
+    halo2curves::bn256::Bn256,
+    transcript::{Blake2bRead, Blake2bWrite},
 };
-use std::ffi::{CStr, CString};
-use std::os::raw::c_char;
+use lazy_static::lazy_static;
+use std::sync::Arc;
 
 mod circuits;
 use circuits::range_proof::RangeProofCircuit;
 
-// Global keys (precompute or cache)
 lazy_static! {
-    static ref PK: ProvingKey<halo2_proofs::halo2curves::pasta::vesta::Affine> = { /* keygen_pk */ };
-    static ref VK: VerifyingKey<halo2_proofs::halo2curves::pasta::vesta::Affine> = { /* keygen_vk */ };
+    static ref PARAMS: ParamsKZG<Bn256> = ParamsKZG::<Bn256>::new(9);  // k=9 sufficient
+    static ref PK: Arc<ProvingKey<halo2_proofs::halo2curves::bn256::G1Affine>> = {
+        let circuit = RangeProofCircuit::default();
+        Arc::new(keygen_pk(&PARAMS, &circuit).unwrap())
+    };
+    static ref VK: Arc<VerifyingKey<halo2_proofs::halo2curves::bn256::G1Affine>> = {
+        let circuit = RangeProofCircuit::default();
+        Arc::new(keygen_vk(&PARAMS, &circuit).unwrap())
+    };
 }
 
 #[no_mangle]
-pub extern "C" fn halo2_prove_range64(value: u64, blinder: *const u8) -> *mut c_char {
+pub extern "C" fn halo2_prove_range(value: u64, blinder_raw: u64) -> *mut u8 {  // Simplified - return ptr/len in practice
     let circuit = RangeProofCircuit {
-        value: Value::known(Fp::from(value)),
-        blinder: Value::known(Fp::from_raw(*blinder as u64)),  // Adapt
+        value: Value::known(value),
+        blinder: Value::known(Fp::from(blinder_raw)),
     };
 
-    let proof = halo2_proofs::plonk::create_proof::<_, _, _>(&PK, &[circuit], &[]).unwrap();  // Serialize proof
+    let mut transcript = Blake2bWrite::<_, _, Challenge255<_>>::init(vec![]);
+    create_proof::<KZGCommitmentScheme<Bn256>, ProverSHPLONK<'_, Bn256>, _, _, _, _>(
+        &PARAMS, &PK, &[circuit], &[&[]], &mut transcript, 
+    ).unwrap();
 
-    let proof_str = CString::new(base64::encode(proof)).unwrap();  // Or raw bytes ptr
-    proof_str.into_raw()
-}
-
-#[no_mangle]
-pub extern "C" fn halo2_verify_range64(proof_ptr: *const c_char, commit: u64) -> u8 {
-    // Deserialize + verify
-    1u8  // Harmony
+    let proof_bytes = transcript.finalize();
+    // Alloc return bytes ptr (real: boxed leak or len)
+    Box::into_raw(proof_bytes.into_boxed_slice()) as *mut u8
 }
