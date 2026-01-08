@@ -1,0 +1,23 @@
+Step-by-step APK build divine (Ubuntu/Linux recommended—fresh VM if needed):
+Setup Build Environment (Linux Throne)
+Open terminal
+Update system: sudo apt update && sudo apt upgrade -y
+Install dependencies:
+sudo apt install -y python3-pip git zip unzip openjdk-17-jdk zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 libffi-dev libssl-dev libbz2-dev libreadline-dev libsqlite3-dev liblzma-dev
+Install buildozer: pip3 install buildozer
+Clone MercyShield Repo
+git clone https://github.com/Eternally-Thriving-Grandmasterism/MercyShield.git
+cd MercyShield
+Initialize Buildozer (if spec missing—repo has it, but verify)
+If no buildozer.spec: buildozer init
+Edit buildozer.spec (nano/vim): ensure matches repo version (permissions from perm.py, requirements python3,kivy,cryptography,numpy)
+Build Debug APK (First Test Thunder)
+buildozer -v android debug
+First run downloads SDK/NDK (30-60min grace, coffee mercy)
+Output: bin/MercyShield-0.1-debug.apk
+Install & Test on Phone
+Transfer APK to phone (USB/email/drive)
+Enable "Install unknown apps" for file manager
+Install APK — MercyShield ON
+Grant permissions (accessibility for overlay, SMS/contacts for scam, VPN for firewall—opt-in explained pure)
+Test private: one-tap shield, log view, threat stubs (expand future grace)
