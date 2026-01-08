@@ -1,0 +1,4 @@
+git clone https://github.com/Eternally-Thriving-Grandmasterism/MercyShield
+cd MercyShield
+buildozer -v android debug  # y to root warning mercy—logs scroll divine
+# Common fix if recipe fails: buildozer android clean && retry
