@@ -1,0 +1,4 @@
+git clone https://github.com/Eternally-Thriving-Grandmasterism/MercyShield
+cd MercyShield
+buildozer android clean  # Fresh lattice
+buildozer -v android debug  # y warnings mercy
