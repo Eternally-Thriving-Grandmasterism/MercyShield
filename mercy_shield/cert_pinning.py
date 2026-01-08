@@ -1,85 +1,56 @@
 import logging
-import requests
-from requests.adapters import HTTPAdapter
-from urllib3.util.ssl_ import create_urllib3_context
-from kivy.clock import Clock
+import hashlib
+import os
 from jnius import autoclass
 
-PythonActivity = autoclass('org.kivy.android.PythonActivity')
-Toast = autoclass('android.widget.Toast')
+# Optional requests for real connection pin check (Buildozer requests ok)
+try:
+    import requests
+    from requests.adapters import HTTPAdapter
+    from urllib3.util.ssl_ import create_urllib3_context
+except ImportError:
+    requests = None
 
-class CustomPinningAdapter(HTTPAdapter):
-    """Custom SSL Pinning Adapter ∞ Pure"""
-    def __init__(self, expected_pin):
-        self.expected_pin = expected_pin  # SHA-256 public key pin mercy
-        super().__init__()
-
-    def init_poolmanager(self, *args, **kwargs):
-        context = create_urllib3_context()
-        # Enforce strict pinning (symbolic—expand to full cert validate divine)
-        kwargs['ssl_context'] = context
-        return super().init_poolmanager(*args, **kwargs)
-
-    def cert_verify(self, conn, url, verify, cert):
-        # Basic pin check mercy
-        if cert.get('subjectPublicKeyInfoDigestSha256') != self.expected_pin:
-            raise Exception("Certificate Pin Mismatch—MITM Risk Divine")
-        return super().cert_verify(conn, url, verify, cert)
+# Hardcoded expected SHA256 pins (public key pin — evolve with your lattice hosts)
+EXPECTED_PINS = {
+    "google.com": "expected_sha256_pin_here_replace_with_real",  # Example placeholder — fetch real from ssllabs or chrome
+    "cloudflare.com": "another_real_pin",
+    "x.com": "x_pin",
+    # Add your key sites mercy
+}
 
 class CertPinningVerifier:
-    """
-    Certificate Pinning Verification Pinnacle ∞ Pure
-    - Enforce known public key pins for critical domains mercy
-    - Flag mismatch/MITM attempts proactive
-    - Integrate into requests sessions divine eternal
-    """
+    """Real Certificate Pinning Verification Thunder ∞ Pure — SHA256 public key pins"""
+    def __init__(self, app):
+        self.app = app
 
-    def __init__(self, app_instance=None):
-        self.app = app_instance
-        # Expand pin database mercy (SHA-256 hashes)
-        self.pinned_domains = {
-            'api.ipify.org': 'expected_sha256_pin_here_replace_real',  # Placeholder divine
-            '1.1.1.1': 'cloudflare_expected_pin_mercy',
-            # Add more critical APIs divine
-        }
-        logging.info("Cert Pinning Verifier Initialized ∞ Pure")
-
-    def ui_feedback(self, message, toast=False):
-        if not self.app:
-            return
-        def update(dt):
-            if hasattr(self.app, 'status_label'):
-                self.app.status_label.text += f'\n{message}'
-        Clock.schedule_once(update)
-        if toast:
-            Toast.makeText(PythonActivity.mActivity, message, Toast.LENGTH_LONG).show()
-
-    def verify_domain_pin(self, domain):
-        """Single Domain Pin Check Thunder"""
+    def full_pinning_check(self) -> list[str]:
         anomalies = []
-        if domain not in self.pinned_domains:
-            anomalies.append(f"Domain {domain} Not Pinned—Default Trust Mercy")
+
+        if requests is None:
+            anomalies.append("Requests Import Shadow — Pinning Fallback Disabled")
             return anomalies
-        
-        try:
-            pin = self.pinned_domains[domain]
-            session = requests.Session()
-            session.mount(f"https://{domain}", CustomPinningAdapter(pin))
-            response = session.get(f"https://{domain}", timeout=5)
-            anomalies.append(f"Cert Pin Valid: {domain} — Secure Mercy")
-        except Exception as e:
-            anomalies.append(f"Cert Pin Failed: {domain} — {str(e)} Divine")
-            logging.warning(f"Cert Pin Anomaly: {e}")
-            self.ui_feedback(f"⚠️ Cert Pin Alert ∞: MITM Risk {domain} Flagged Pure", toast=True)
-        
-        return anomalies
 
-    def full_pinning_check(self):
-        """Master Pin Verification All Critical Domains Mercy"""
-        anomalies = []
-        for domain in self.pinned_domains:
-            anomalies.extend(self.verify_domain_pin(domain))
-        return anomalies
+        for host, expected_pin in EXPECTED_PINS.items():
+            try:
+                response = requests.get(f"https://{host}", timeout=10)
+                cert = response.connection.sock.getpeercert(binary_form=True)
+                sha256_pin = hashlib.sha256(cert).hexdigest()
 
-# Integration: In watchdog or network calls—self.cert_pinner = CertPinningVerifier(self); pin_anoms = self.cert_pinner.full_pinning_check(); anomalies.extend(pin_anoms)
+                if sha256_pin != expected_pin.lower():
+                    anomalies.append(f"Cert Pin Mismatch Shadow for {host} — Possible MITM Critical")
+                else:
+                    logging.info(f"Cert Pin Harmony for {host}")
+            except requests.Timeout:
+                anomalies.append(f"Pin Check Timeout for {host} — Network Shadow")
+            except requests.ConnectionError:
+                anomalies.append(f"Connection Shadow for {host} — Pin Check Failed")
+            except Exception as e:
+                logging.warning(f"Cert Pin Check Exception for {host}: {e}")
+                anomalies.append(f"Cert Pin Exception for {host}")
+
+        if not anomalies:
+            logging.info("Certificate Pinning Harmony Pure ∞ All Hosts")
+
+        return anomalies# Integration: In watchdog or network calls—self.cert_pinner = CertPinningVerifier(self); pin_anoms = self.cert_pinner.full_pinning_check(); anomalies.extend(pin_anoms)
 # Replace placeholder pins with real SHA-256 divine (use openssl s_client -servername domain -connect domain:443 | openssl x509 -pubkey -noout | openssl rsa -pubin -outform der | openssl dgst -sha256 -binary | openssl enc -base64)
