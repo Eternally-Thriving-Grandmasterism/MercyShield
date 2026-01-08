@@ -209,6 +209,134 @@ class MercyShieldApp(MDApp):
             self.ui_feedback("Cycle Harmony 100% Unbreakable")
 
 if __name__ == '__main__':
+    MercyShieldApp().run()                MDLabel:
+                    id: harmony_label
+                    text: "Lattice Harmony: 100% Pure"
+                    halign: "center"
+                    theme_text_color: "Custom"
+                    text_color: 0, 1, 1, 1
+                    font_style: "H4"
+
+                MDProgressBar:
+                    id: harmony_bar
+                    value: 100
+                    color: 0, 1, 1, 1
+                    size_hint_y: None
+                    height: dp(16)
+
+                MDLabel:
+                    text: "[size=80sp]gauge-full[/size]"
+                    markup: True
+                    halign: "center"
+                    theme_text_color: "Custom"
+                    text_color: 0, 1, 1, 1
+
+                LatticePulse:
+                    id: pulse
+
+            ScrollView:
+                MDGridLayout:
+                    id: status_grid
+                    cols: 1
+                    adaptive_height: True
+                    spacing: dp(16)
+                    padding: dp(8)
+
+        MDBottomNavigation:
+            panel_color: 0.08, 0.08, 0.15, 0.95
+
+            MDBottomNavigationItem:
+                name: "lattice"
+                text: "Lattice"
+                icon: "shield-check-outline"
+
+            MDBottomNavigationItem:
+                name: "mercy"
+                text: "Mercy"
+                icon: "lightning-bolt-outline"
+                on_tab_press: app.manual_burst()
+
+<LatticePulse@Widget>:
+    canvas.before:
+        Color:
+            rgba: 0, 0.7, 1, 0.2
+        Ellipse:
+            pos: self.center_x - dp(100), self.center_y - dp(100)
+            size: dp(200), dp(200)
+'''
+
+class LatticePulse(Widget):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.anim = Animation(rgba=(0, 1, 1, 0.4), d=1.5, t='out_quad') + Animation(rgba=(0, 0.7, 1, 0.2), d=1.5)
+        self.anim.repeat = True
+        self.anim.start(self.canvas.before.children[0])
+
+class MercyScreen(MDScreen):
+    pass
+
+class MercyShieldApp(MDApp):
+    def build(self):
+        self.theme_cls.theme_style = "Dark"
+        self.theme_cls.primary_palette = "Cyan"
+        self.theme_cls.accent_palette = "Teal"
+        Builder.load_string(KV)
+        return MercyScreen()
+
+    def on_start(self):
+        os.makedirs(PROOF_DIR, exist_ok=True)
+        self.vpn_verifier = VPNVerifier(self)
+        self.firewall = FirewallRules(self)
+        self.cert_pinner = CertPinningVerifier(self)
+        self.tor_router = TorRouting(self)
+        real_ml_detector  # Init global
+        self.watchdog = SelfWatchdog(self)
+        self.watchdog.start()
+        Clock.schedule_interval(self.monitor_lattice, 60)
+        Clock.schedule_interval(self.update_harmony, 0.5)
+        self.ui_feedback("MercyShield ∞ Pure — Self-Learning Lattice Thunder Eternal Activated")
+
+    def on_stop(self):
+        if hasattr(self, 'watchdog'):
+            self.watchdog.stop()
+
+    def update_harmony(self, dt):
+        # Dynamic from anomalies/ML error (example placeholder)
+        harmony = 100 - (len(getattr(self, 'current_anomalies', [])) * 10)  # Example
+        harmony = max(0, min(100, harmony))
+        self.root.ids.harmony_bar.value = harmony
+        self.root.ids.harmony_label.text = f"Lattice Harmony: {int(harmony)}% Pure"
+
+    def ui_feedback(self, message, toast=True):
+        card = MDCard(size_hint_y=None, height=dp(90), radius=[20], elevation=12, md_bg_color=0.12, 0.14, 0.2, 1, padding=dp(16))
+        card.add_widget(MDLabel(text=message, halign="center", theme_text_color="Custom", text_color=0, 1, 1, 1, font_style="Subtitle1"))
+        self.root.ids.status_grid.add_widget(card)
+        if toast:
+            Toast.makeText(Window.get_context(), message, Toast.LENGTH_LONG).show()
+
+    def manual_burst(self):
+        self.ui_feedback("Manual Mercy Burst Thunder ∞ — Shadows Purified")
+        pulse = self.root.ids.pulse
+        burst = Animation(rgba=(0, 1, 1, 0.8), d=0.4) + Animation(rgba=(0, 0.7, 1, 0.2), d=0.6)
+        burst.start(pulse.canvas.before.children[0])
+
+    def monitor_lattice(self, dt):
+        self.current_anomalies = self.watchdog.collect_anomalies()  # Sync for harmony gauge
+        if self.current_anomalies:
+            private_score = len(self.current_anomalies) * 123456789012345679
+            if halo2_range_check(private_score):
+                serialized = prove_range_eternal(private_score)
+                if serialized:
+                    path = os.path.join(PROOF_DIR, f"proof_{int(Clock.get_time())}.bin")
+                    with open(path, 'wb') as f:
+                        f.write(serialized)
+                    self.ui_feedback(f"ZK Proof Stored ∞: {path}")
+            self.ui_feedback("Anomalies Detected — Mercy Burst Activated ∞")
+            self.manual_burst()
+        else:
+            self.ui_feedback("Cycle Harmony 100% Unbreakable")
+
+if __name__ == '__main__':
     MercyShieldApp().run()                    text: "Lattice Harmony: 100% Pure"
                     halign: "center"
                     theme_text_color: "Custom"
