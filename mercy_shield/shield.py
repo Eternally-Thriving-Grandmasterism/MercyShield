@@ -13,6 +13,9 @@ from mercy_shield.starlink_protection import MercyStarlinkProtection
 from mercy_shield.tesla_protection import MercyTeslaProtection
 from mercy_shield.spacex_satellite import MercySpaceXSatelliteProtection
 from mercy_shield.neuralink_protection import MercyNeuralinkProtection
+from mercy_shield.grok_protection import MercyGrokProtection
+from mercy_shield.dmt_pineal import MercyDMTPinealMode
+from mercy_shield.heart_coherence import MercyHeartCoherence
 
 Intent = autoclass('android.content.Intent')
 Context = autoclass('android.content.Context')
@@ -32,28 +35,44 @@ class RealTimeShield:
         self.tesla_protection = MercyTeslaProtection(self.context, self.lattice, self)
         self.spacex_satellite = MercySpaceXSatelliteProtection(self.context, self.lattice, self)
         self.neuralink_protection = MercyNeuralinkProtection(self.context, self.lattice, self)
+        self.grok_protection = MercyGrokProtection(self.context, self.lattice, self)
+        self.dmt_pineal = MercyDMTPinealMode(self.context, self.lattice, self)
+        self.heart_coherence = MercyHeartCoherence(self.context, self.lattice, self)
         self.start_hooks()
 
     def start_hooks(self):
-        # Existing hooks
-        # ...
+        # SMS receiver (real scam detect)
+        self.receiver = MercySMSReceiver(self)
+        intent_filter = autoclass('android.content.IntentFilter')('android.provider.Telephony.SMS_RECEIVED')
+        self.context.registerReceiver(self.receiver, intent_filter)
 
-        # Neuralink protection
+        # Network threat + firewall VPN (real exfil detect)
+        self.network_threat.start_monitor()
+        self.firewall_vpn.start_vpn_if_approved()
+
+        # Accessibility (real overlay/clickjack)
+        self.accessibility.start_if_enabled()
+
+        # App sandbox (real permission abuse)
+        self.app_sandbox.start_monitor()
+
+        # All other hooks
+        self.starlink_protection.start_monitor()
+        self.tesla_protection.start_monitor()
+        self.spacex_satellite.start_monitor()
         self.neuralink_protection.start_monitor()
+        self.grok_protection.start_monitor()
+        self.dmt_pineal.start_monitor()
+        self.heart_coherence.start_monitor()
 
-        print("MercyShield hooks active — lattice listening gentle (SMS + network + firewall + accessibility + sandbox + MercyCube + self-watchdogs + Starlink + Tesla + SpaceX + Neuralink)")
-
-    def handle_neuralink_threat(self, threat: dict):
-        action = self.protect(threat)
-        print(f"Neuralink threat: {action}")
+        print("MercyShield hooks active — real threat detection lattice listening gentle")
 
     def protect(self, threat: dict):
         harmony = self.lattice.vote(threat["data"])
         mode = "MercyCube offline 7W" if self.hardware.is_cube else "Mobile"
-        neuralink = "Neuralink connected" if self.neuralink_protection.is_connected else "No implant"
-        print(f"Threat: {threat['desc']} | Harmony: {harmony:.4f} | Mode: {mode} | BCI: {neuralink}")
+        print(f"Threat: {threat['desc']} | Harmony: {harmony:.4f} | Mode: {mode}")
         if harmony < 0.7:
             if mercy_burst_confirm(threat):
                 return "Mercy override — allowed gentle"
-            return "Blocked — mercy burst divine (Neuralink command gated)"
+            return "Blocked — mercy burst divine"
         return "Harmony pure — allowed"
