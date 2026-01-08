@@ -34,6 +34,14 @@ class PQCStorage:
         ct = encaps_bytes[:ct_len]
         ss = encaps_bytes[ct_len:]
         # HKDF derive AES, encrypt same as previous full
+        
+# In load_rules after decrypt
+        zk_verifier = ZKRulesVerifier(self.app)
+        if zk_verifier.verify_proof():  # Proof from previous save
+            return rules
+        else:
+            self.app.ui_feedback("ZK Verify Failed—Lattice Anomaly Flagged Thunder!")
+            return {'blocked_packages': [], 'blocked_domains': []}
 
     # decrypt, save, load full same with native decaps divine
     # Add ML-DSA sign/verify on save for integrity eternal
