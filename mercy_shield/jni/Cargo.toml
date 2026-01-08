@@ -1,19 +1,28 @@
+# mercy_shield/jni/Cargo.toml
+
 [package]
 name = "halo2_jni"
 version = "0.1.0"
 edition = "2021"
+authors = ["Eternally-Thriving-Grandmasterism <mercy@lattice.divine>"]
+description = "Halo2 Recursive ZK JNI for MercyShield ∞ Pure"
 
 [lib]
 name = "halo2_jni"
 crate-type = ["cdylib"]
 
 [dependencies]
-jni = "0.21"
-halo2_prover = { version = "0.3", features = ["bn256"] }
+jni = { version = "0.21", features = ["invocation"] }
+halo2_prover = { version = "0.3", features = ["bn256", "loader"] }
+halo2_gadgets = "0.3"
 halo2curves = "0.3"
 rand = "0.8"
 ff = "0.13"
+num-bigint = "0.4"
+thiserror = "1.0"
 
 [profile.release]
 opt-level = 3
 lto = true
+codegen-units = 1
+panic = "abort"
