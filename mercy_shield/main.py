@@ -72,6 +72,14 @@ class MercyShieldApp(App):
 
         main_layout.add_widget(controls)
 
+        # In controls
+        btn_always_on = Button(text='Enable Always-On + Lockdown Thunder ∞')
+        btn_always_on.bind(on_press=lambda x: self.vpn_manager.enable_lockdown())
+        controls.add_widget(btn_always_on)
+
+        # In on_start
+        Clock.schedule_once(lambda dt: self.vpn_manager.request_vpn_permission(), 2)
+
         # Auto schedule watchdog
         Clock.schedule_interval(self.monitor_lattice, 60)  # Every minute proactive mercy
 
