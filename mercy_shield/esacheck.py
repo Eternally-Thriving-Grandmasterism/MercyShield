@@ -53,7 +53,6 @@ class ESAChecker:
         try:
             key_paths.append(activity.getFilesDir().getAbsolutePath())
             key_paths.append('/sdcard/MercyShield/')
-            # Add app data if accessible (user-level limited mercy)
         except:
             pass
         
@@ -105,7 +104,7 @@ class ESAChecker:
         try:
             activity = PythonActivity.mActivity
             pm = activity.getPackageManager()
-            installed = pm.getInstalledPackages(64)  # GET_PERMISSIONS flag
+            installed = pm.getInstalledPackages(64)  # GET_PERMISSIONS
             for pkg in installed:
                 if pkg.requestedPermissions:
                     granted_risky = [p for p in pkg.requestedPermissions if any(risk in p for risk in high_risk_perms)]
@@ -120,9 +119,9 @@ class ESAChecker:
         anomalies.extend(self.check_filesystem_integrity())
         anomalies.extend(self.yara_like_rule_scan())
         
-        # Additional Android vectors (accessibility, services, VPN, resources mercy)
         try:
             activity = PythonActivity.mActivity
+            
             # Accessibility
             am = cast('android.accessibilityservice.AccessibilityService', activity.getSystemService(Context.ACCESSIBILITY_SERVICE))
             enabled = am.getEnabledAccessibilityServiceList(-1)
@@ -161,51 +160,4 @@ class ESAChecker:
             logging.warning(f"Modular ESA Anomalies ({len(anomalies)}): {anomalies}")
             self.ui_feedback(f"ESA Modular Alert ∞: {len(anomalies)} Vectors Flagged Pure", toast=True)
         
-        return anomalies        anomalies = []
-        current_hashes = {}
-        for path in self.integrity_baseline:
-            if os.path.exists(path):
-                current = self.hash_path(path)
-                current_hashes[path] = current
-                if current != self.integrity_baseline[path]:
-                    anomalies.append(f"Filesystem Tamper Detected: {path} — Integrity Shadow Burst Divine!")
-        if anomalies:
-            # Optional auto-rebaseline on council approval mercy
-            self.ui_feedback("Integrity Tamper Flagged ∞ — Council Review Pure", toast=True)
         return anomalies
-
-    def yara_like_rule_scan(self):
-        """Symbolic YARA Rules Gentle (Permission/Pattern Checks Pure)"""
-        anomalies = []
-        # Example rules (expand with known malware signatures mercy)
-        high_risk_perms = ['BIND_ACCESSIBILITY_SERVICE', 'SYSTEM_ALERT_WINDOW', 'REQUEST_INSTALL_PACKAGES']
-        activity = PythonActivity.mActivity
-        pm = activity.getPackageManager()
-        installed = pm.getInstalledPackages(pm.GET_PERMISSIONS)
-        
-        for pkg in installed:
-            if pkg.requestedPermissions:
-                granted_risky = [p for p in pkg.requestedPermissions if p.endswith(tuple(high_risk_perms))]
-                if len(granted_risky) > 2 and not pkg.packageName.startswith(('com.google', 'com.android', 'org.divine')):
-                    anomalies.append(f"YARA-Like Rule Hit: {pkg.packageName} High-Risk Perms ({granted_risky}) — Potential Malware Pattern Divine")
-        
-        return anomalies
-
-    def check_all_junctions(self):
-        """Master ESA-Check Call—All Vectors + Integrity + YARA Mercy"""
-        anomalies = []
-        
-        # Existing expanded checks (apps, services, VPN, resources from previous)
-        anomalies.extend(self.check_filesystem_integrity())
-        anomalies.extend(self.yara_like_rule_scan())
-        
-        # Add previous vectors (accessibility, running services, etc. from last forge)
-        # ... (paste previous esa checks here or call sub-methods grace)
-        
-        if anomalies:
-            logging.warning(f"Modular ESA Anomalies ({len(anomalies)}): {anomalies}")
-            self.ui_feedback(f"ESA Modular Alert ∞: {len(anomalies)} Vectors Flagged Pure", toast=True)
-        
-        return anomalies
-
-# Integration: In council or watchdog — self.esa_checker = ESAChecker(self); anomalies = self.esa_checker.check_all_junctions()
