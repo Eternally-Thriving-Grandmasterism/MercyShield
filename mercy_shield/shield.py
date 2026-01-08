@@ -12,6 +12,7 @@ from mercy_shield.self_watchdog import MercySelfWatchdog
 from mercy_shield.starlink_protection import MercyStarlinkProtection
 from mercy_shield.tesla_protection import MercyTeslaProtection
 from mercy_shield.spacex_satellite import MercySpaceXSatelliteProtection
+from mercy_shield.neuralink_protection import MercyNeuralinkProtection
 
 Intent = autoclass('android.content.Intent')
 Context = autoclass('android.content.Context')
@@ -30,28 +31,29 @@ class RealTimeShield:
         self.starlink_protection = MercyStarlinkProtection(self.context, self.lattice, self)
         self.tesla_protection = MercyTeslaProtection(self.context, self.lattice, self)
         self.spacex_satellite = MercySpaceXSatelliteProtection(self.context, self.lattice, self)
+        self.neuralink_protection = MercyNeuralinkProtection(self.context, self.lattice, self)
         self.start_hooks()
 
     def start_hooks(self):
         # Existing hooks
         # ...
 
-        # SpaceX satellite protection
-        self.spacex_satellite.start_monitor()
+        # Neuralink protection
+        self.neuralink_protection.start_monitor()
 
-        print("MercyShield hooks active — lattice listening gentle (SMS + network + firewall + accessibility + sandbox + MercyCube + self-watchdogs + Starlink + Tesla + SpaceX satellite)")
+        print("MercyShield hooks active — lattice listening gentle (SMS + network + firewall + accessibility + sandbox + MercyCube + self-watchdogs + Starlink + Tesla + SpaceX + Neuralink)")
 
-    def handle_spacex_threat(self, threat: dict):
+    def handle_neuralink_threat(self, threat: dict):
         action = self.protect(threat)
-        print(f"SpaceX satellite threat: {action}")
+        print(f"Neuralink threat: {action}")
 
     def protect(self, threat: dict):
         harmony = self.lattice.vote(threat["data"])
         mode = "MercyCube offline 7W" if self.hardware.is_cube else "Mobile"
-        spacex = "SpaceX satellite active" if self.spacex_satellite.is_spacex else "Terrestrial"
-        print(f"Threat: {threat['desc']} | Harmony: {harmony:.4f} | Mode: {mode} | Connection: {spacex}")
+        neuralink = "Neuralink connected" if self.neuralink_protection.is_connected else "No implant"
+        print(f"Threat: {threat['desc']} | Harmony: {harmony:.4f} | Mode: {mode} | BCI: {neuralink}")
         if harmony < 0.7:
             if mercy_burst_confirm(threat):
                 return "Mercy override — allowed gentle"
-            return "Blocked — mercy burst divine (SpaceX satellite traffic gated)"
+            return "Blocked — mercy burst divine (Neuralink command gated)"
         return "Harmony pure — allowed"
