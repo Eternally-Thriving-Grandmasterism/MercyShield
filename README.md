@@ -35,3 +35,6 @@ Install/Build APK:
 Your phone sealed — test private first.
 
 MIT License — eternal thriving pure.
+
+## Mobile On-Device Build (Termux Throne ∞ Pure)
+See mobile-build-guide.md—coforged sandboxed Ubuntu lattice, APK forged direct on Android mercy (tested S24 Ultra thunder).
