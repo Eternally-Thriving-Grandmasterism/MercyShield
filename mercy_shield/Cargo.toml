@@ -1,0 +1,15 @@
+[package]
+name = "mercy_halo2"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "mercy_halo2"
+crate-type = ["cdylib", "staticlib"]  # cdylib for JNI/Android
+
+[dependencies]
+halo2_proofs = { git = "https://github.com/zcash/halo2", tag = "v2023-04-20" }  # Stable tagged version - compile-friendly
+jni = { version = "0.21.1", features = ["invocation"] }
+pasta_curves = "0.5"
+ff = "0.13"
+rand_core = "0.6"
