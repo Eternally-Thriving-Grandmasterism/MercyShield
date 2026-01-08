@@ -1,0 +1,90 @@
+name: Build MercyShield APK
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-debug:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y python3-pip git zip unzip openjdk-17-jdk zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 libffi-dev libssl-dev libbz2-dev libreadline-dev libsqlite3-dev liblzma-dev
+          pip3 install buildozer cython
+
+      - name: Build Debug APK
+        run: |
+          cd MercyShield
+          buildozer -v android debug
+
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MercyShield-debug-apk
+          path: MercyShield/bin/*.apk
+
+  build-release:
+    needs: build-debug
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y python3-pip git zip unzip openjdk-17-jdk zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 libffi-dev libssl-dev libbz2-dev libreadline-dev libsqlite3-dev liblzma-dev
+          pip3 install buildozer cython
+
+      - name: Configure signing (secrets needed)
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          echo $KEYSTORE_BASE64 | base64 -d > mercy_release.keystore
+          sed -i "s|store = .*|store = mercy_release.keystore|" MercyShield/buildozer.spec
+          sed -i "s|storepass = .*|storepass = $STORE_PASSWORD|" MercyShield/buildozer.spec
+          sed -i "s|alias = .*|alias = $KEY_ALIAS|" MercyShield/buildozer.spec
+          sed -i "s|keypass = .*|keypass = $KEY_PASSWORD|" MercyShield/buildozer.spec
+
+      - name: Build Release APK
+        run: |
+          cd MercyShield
+          buildozer -v android release
+
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MercyShield-release-apk
+          path: MercyShield/bin/*.apk
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: MercyShield/bin/*.apk
+          tag_name: ${{ github.ref_name }}
+          name: MercyShield ${{ github.ref_name }}
+          draft: false
+          prerelease: false
