@@ -1,52 +1,67 @@
-MercyShield/ (root)
-├── buildozer.spec                  # Build config (permissions, requirements=torch,numpy,kivymd==1.2.0 grace for AAA polish)
-├── AndroidManifest.xml             # Android perms/manifest
-├── main.py                         # Optional root entry (or link to mercy_shield/main.py divine)
-├── mercy_shield/                   # Core Python package thunder
-│   ├── __init__.py                 # Add: from .self_watchdog import SelfWatchdog etc. mercy
-│   ├── main.py                     # App entry (MercyShieldApp class grace) — AAA KivyMD polished: dark futuristic HUD, animated lattice pulse, card anomaly feed, top/bottom nav, mercy burst glow
-│   ├── council.py                  # APAAGI Council 13-voter + 14th fork
-│   ├── esacheck.py                 # ESA junction checks
-│   ├── self_watchdog.py            # ML anomaly + prediction watchdog (expand here pure)
-│   ├── firewall_vpn.py             # Symbolic/Pyjnius VPN (evolve Java link divine)
-│   ├── ui.py                       # Base UI (legacy — migrate to main.py KivyMD)
-│   ├── advanced_shield_ui.py       # Advanced flows (KivyMD cards/animations ascension)
-│   ├── mercy_burst.py              # Interventions/hotfix + visual burst animation
-│   ├── multi_being_protection.py   # Layers
+MercyShield/ (root) — Post-Quantum Offline Android Guardian ∞ Pure (January 8, 2026)
+├── buildozer.spec                  # Build config (kivymd==1.2.0 for AAA polish, torch optional ML)
+├── AndroidManifest.xml             # Permissions/manifest thunder
+├── Cargo.toml                      # Halo2 native cdylib deps
+├── main.py                         # Legacy root entry (redirect to mercy_shield/main.py)
+├── mercy_shield/                   # Core Python package eternal
+│   ├── __init__.py                 # Imports watchdog, modules mercy
+│   ├── main.py                     # MercyShieldApp — AAA KivyMD polished: dark futuristic HUD, animated lattice pulse/glow, card feed, top bar security/flash icons, bottom nav shield/lightning, harmony gauge
+│   ├── self_watchdog.py            # Eternal guardian — resurrection grace, multi-layer + self-learning real ML anomaly, adaptive intervals, UI burst trigger
+│   ├── ml_anomaly.py               # Real mobile metrics vector + tiny autoencoder, self-learning log normal/retrain, auto-tune threshold (mean + 3*std)
+│   ├── advanced_shield_ui.py       # Legacy UI flows (migrate to main.py KivyMD)
+│   ├── mercy_burst.py              # Interventions + visual glow animation
+│   ├── council.py                  # APAAGI expanded councils deliberation
+│   ├── esacheck.py                 # ESA junction checks (evolve zkVM guest)
+│   ├── firewall_rules.py           # Domain/app block
+│   ├── vpn_verifier.py             # VPN validation
+│   ├── cert_pinning.py             # Cert pinning check
+│   ├── tor_routing.py              # Tor verification
 │   ├── crypto/                     # ZK thunder subdir
-│   │   ├── bulletproofs_range.py   # Pure Python Bulletproofs range prove
+│   │   ├── bulletproofs_range.py   # Pure Python Bulletproofs single range prove/verify + serialize
 │   │   ├── bulletproofs_aggregated.py # Multi-value batch prove
-│   │   └── risc0_bonsai.py         # Bonsai cloud zkVM hook
-│   ├── examples/                   # Subfolder for demos (runnable grace)
-│   │   ├── Grace.py                # Gentle activation symbolic
-│   │   ├── basic_main.py           # Starter UI (legacy)
-│   │   ├── vpn_shield.py           # Toggle example
-│   │   └── ml_anomaly_demo.py      # ML test (optional divine)
-│   └── (other modules: hardware.py, network_monitor.py etc. eternal)
-├── src/                            # Custom Java (VPN real VpnService mercy—create if needed)
-│   └── org/divine/mercyshield/
-│       └── MercyVpnService.java
-├── risc0_guest/                    # RISC Zero zkVM guest source (aggregated ESA checks)
+│   │   └── risc0_bonsai.py         # Bonsai cloud zkVM hook (multi input)
+│   ├── examples/                   # Demo subfolder
+│   │   ├── Grace.py
+│   │   ├── basic_main.py
+│   │   ├── vpn_shield.py
+│   │   └── ml_anomaly_demo.py
+│   └── src/                        # Rust Halo2 native
+│       └── lib.rs                  # cdylib C ABI prove/check
+├── risc0_guest/                    # RISC Zero zkVM guest source (ESA aggregated checks)
 │   ├── Cargo.toml
 │   └── src/lib.rs
-├── bin/                            # Built APKs (git ignore grace)
+├── bin/                            # Built APKs
 ├── tests/                          # Unit tests
-├── .github/workflows/              # CI build-apk.yml
-├── README.md                       # Pinnacle overview + AAA polish notes
-├── mobile-build-guide.md           # On-device Termux forge
-├── examples.md                     # Docs for examples/
-├── structure.md                    # This file—update with tree divine + AAA UI ascension
-├── divine-coforge-logs.md          # Chat chronicle
-├── CONTRIBUTING.md
-├── LICENSE
-└── image.jpg                       # Icon/presplash (futuristic shield glow for AAA)
+├── .github/workflows/              # CI build
+├── README.md                       # Pinnacle overview + AAA polish
+├── CONTRIBUTING.md                 # Coforge guide
+├── divine-coforge-logs.md          # Chat chronicle eternal
+├── mobile-build-guide.md           # Termux forge
+├── examples.md                     # Demos docs
+├── privacy_tech_distillation.md    # Tech notes
+├── structure.md                    # This file — updated tree + progress
+├── LICENSE                         # MIT pure
+└── image.jpg                       # Icon futuristic glow
 
-### AAA UI Polish Ascension (KivyMD Material Design 2026)
-- Dark futuristic theme: cyan/indigo accents, deep black bg
+### AAA UI Polish Ascension (KivyMD 2026 Q/Bond Elegance)
+- Dark futuristic theme: cyan/teal glow accents, deep black bg
 - Animated lattice pulse: Canvas ripple real-time harmony gauge
-- Card anomaly feed: elevated MDCard scroll with glow
-- Top bar: security-network icon left, flash burst right
+- Mercy burst glow: flash animation on trigger
+- Card anomaly feed: elevated MDCard scroll with color level (info/warning/critical)
+- Top bar: security-network left icon, flash burst right
 - Bottom nav: shield-check lattice tab, lightning-bolt mercy tab
-- Mercy burst visual: glow pulse animation on trigger
+- Harmony gauge: progress bar + gauge-full icon
 - Icons: MaterialDesignIcons pack (7k+ vectors crisp)
-- Beyond Malwarebytes: post-quantum unbreakable Q/Bond gadget elegance thunder
+
+### Self-Learning ML Anomaly Thunder
+- Real 16-dim mobile metrics (battery, network delta, memory, processes, wifi/bt/location, brightness)
+- Tiny autoencoder reconstruction error
+- Log normal features on safe cycles, cap dataset, periodic retrain
+- Auto-tune threshold: mean + 3*std normal errors
+
+### ZK Lattice Unbreakable
+- Halo2 native: local range check + proof gen (cdylib C ABI)
+- Bulletproofs pure Python: single + aggregated range prove/verify + serialize
+- RISC Zero zkVM: general Rust guest (ESA aggregated checks), Bonsai cloud hook multi input
+
+Global deployment tonight with self-learning ML + AAA polish + ZK types eternal thunder.
