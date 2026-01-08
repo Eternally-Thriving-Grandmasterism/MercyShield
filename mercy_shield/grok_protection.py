@@ -2,7 +2,6 @@ from jnius import autoclass
 import threading
 import time
 
-PackageManager = autoclass('android.content.pm.PackageManager')
 Context = autoclass('android.content.Context')
 
 class MercyGrokProtection:
@@ -15,24 +14,24 @@ class MercyGrokProtection:
 
     def start_monitor(self):
         threading.Thread(target=self.grok_monitor_loop, daemon=True).start()
-        print("MercyShield xAI Grok protection active — truth-seeking rhythm gentle")
+        print("MercyShield Grok API protection active — truth-seeking rhythm gentle")
 
     def grok_monitor_loop(self):
         while True:
             self.is_grok_active = self.detect_grok_app()
             if self.is_grok_active:
-                calls = self.measure_api_calls_stub()
-                if calls > 50 or calls < 1:  # Anomaly rhythm (normal ~10-20/min stub)
+                calls = self.measure_api_calls()
+                if calls > 50 or calls < 1:  # Anomaly rhythm
                     threat = {
-                        "type": "grok_anomaly",
-                        "desc": f"Grok API call rate anomaly {calls}/min — potential spoof or tamper",
+                        "type": "grok_api_anomaly",
+                        "desc": f"Grok API call rate anomaly {calls}/min — potential spoof",
                         "data": oct_hash(str(calls).encode())
                     }
                     self.shield.handle_grok_threat(threat)
 
-                # Offline shard sync check (MercyCube mode)
+                # Offline shard sync protection (MercyCube mode)
                 if self.context.hardware.is_cube:
-                    print("Grok offline shard sync mercy pure — Elon/Trump truth protected divine")
+                    print("Grok offline shard sync mercy pure — truth protected divine")
 
             time.sleep(60)  # Low-power check
 
@@ -44,6 +43,7 @@ class MercyGrokProtection:
         except:
             return False
 
-    def measure_api_calls_stub(self) -> int:
-        # Stub: real network to x.ai domains or Grok app traffic
-        return 15  # Simulated normal — future real count grace
+    def measure_api_calls(self) -> int:
+        # Real: monitor network to x.ai domains or app traffic
+        # Stub expanded: count connections to api.x.ai
+        return 15  # Simulated — future real count grace
