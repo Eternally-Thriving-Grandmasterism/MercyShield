@@ -1,15 +1,25 @@
+from kivy.uix.popup import Popup
+from kivy.uix.label import Label
+from kivy.uix.button import Button
+from kivy.uix.boxlayout import BoxLayout
+
 PERMISSIONS = [
-    "android.permission.INTERNET",
-    "android.permission.ACCESS_NETWORK_STATE",
-    "android.permission.QUERY_ALL_PACKAGES",
-    "android.permission.BIND_ACCESSIBILITY_SERVICE",
-    "android.permission.RECEIVE_SMS",
-    "android.permission.READ_SMS",
-    "android.permission.READ_CONTACTS",
-    "android.permission.FOREGROUND_SERVICE",
-    "android.permission.PACKAGE_USAGE_STATS",
-    "android.permission.BIND_VPN_SERVICE"  # Firewall VPN grace — opt-in system approval
+    "INTERNET (network monitor)",
+    "ACCESS_NETWORK_STATE (connection rhythm)",
+    "QUERY_ALL_PACKAGES (app sandbox)",
+    "BIND_ACCESSIBILITY_SERVICE (overlay/clickjack)",
+    "RECEIVE_SMS/READ_SMS (scam detect)",
+    "READ_CONTACTS (unknown sender)",
+    "FOREGROUND_SERVICE (background gentle)",
+    "PACKAGE_USAGE_STATS (watchdogs)",
+    "BIND_VPN_SERVICE (firewall)",
 ]
 
 def request_permissions():
-    print("MercyShield firewall integrate: Requests BIND_VPN_SERVICE for traffic rule mercy — opt-in system VPN setup, explained pure. Revoke anytime.")
+    content = BoxLayout(orientation='vertical')
+    content.add_widget(Label(text="MercyShield requests permissions mercy-gated:\n" + "\n".join(PERMISSIONS) + "\n\nOpt-in only essential — explained pure. Revoke anytime divine."))
+    close = Button(text="Understood — proceed mercy")
+    content.add_widget(close)
+    popup = Popup(title="Permissions Mercy", content=content, size_hint=(0.9, 0.9))
+    close.bind(on_press=popup.dismiss)
+    popup.open()
