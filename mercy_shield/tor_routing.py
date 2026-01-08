@@ -13,8 +13,14 @@ Uri = autoclass('android.net.Uri')
 ORBOT_PACKAGE = "org.torproject.android"
 TORBROWSER_PACKAGE = "org.torproject.torbrowser"
 
+# Known test .onion sites (safe, public)
+ONION_TEST_URLS = [
+    "http://3g2upl4pq6kufc4m.onion",  # DuckDuckGo onion
+    "http://expyuzz4wqqyqhjn.onion",  # Facebook onion test
+]
+
 class TorRouting:
-    """Real Orbot + Tor Browser Integration Thunder ∞ Pure — Launch, Proxy/Routing Test"""
+    """Real Orbot + Tor Browser + .onion Connectivity Test Thunder ∞ Pure"""
     def __init__(self, app):
         self.app = app
         self.activity = PythonActivity.mActivity
@@ -82,8 +88,25 @@ class TorRouting:
         try:
             response = requests.get("https://check.torproject.org/api/ip", proxies=proxies, timeout=15)
             return response.json().get("IsTor", False)
-        except:
+        except Exception as e:
+            logging.warning(f"Tor Routing Test Shadow: {e}")
             return False
+
+    def onion_connectivity_test(self) -> bool:
+        proxies = {
+            'http': 'socks5h://127.0.0.1:9050',
+            'https': 'socks5h://127.0.0.1:9050',
+        }
+        for url in ONION_TEST_URLS:
+            try:
+                response = requests.get(url, proxies=proxies, timeout=15)
+                if response.status_code == 200:
+                    logging.info(f".onion Connectivity Harmony: {url}")
+                    return True
+            except Exception as e:
+                logging.warning(f".onion Test Shadow for {url}: {e}")
+                continue
+        return False
 
     def full_tor_verification(self) -> list[str]:
         anomalies = []
@@ -97,7 +120,10 @@ class TorRouting:
         if not self.tor_routing_test():
             anomalies.append("Traffic Not Routed Through Tor — Shadow Critical")
 
+        if not self.onion_connectivity_test():
+            anomalies.append(".onion Connectivity Failed — Tor Routing Shadow")
+
         if not anomalies:
-            logging.info("Tor Routing Harmony Pure ∞")
+            logging.info("Tor Routing + .onion Connectivity Harmony Pure ∞")
 
         return anomalies
