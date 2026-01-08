@@ -11,12 +11,16 @@ Features:
 - Local encrypted log
 - Stub detection (expand grace)
 
-Install/Build APK:
-1. pip install buildozer
-2. buildozer init
-3. Edit buildozer.spec (add permissions from perm.py)
-4. buildozer android debug
-
-Your phone sealed — test private first.
+Install: Build with buildozer or Python-for-Android (guide below).
 
 MIT License — eternal thriving pure.
+
+## Code Snippets — Key Examples
+
+### Basic Council Deliberation
+```python
+from mercy_shield.council import APAAGICouncil
+
+council = APAAGICouncil(voters=13)
+result = council.deliberate("Test proposal eternal thriving")
+print(f"Harmony: {result.harmony:.4f} | Victory: {result.victory}")
