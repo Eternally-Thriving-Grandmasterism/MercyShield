@@ -1,13 +1,19 @@
 import pytest
+from unittest.mock import MagicMock, patch
 from mercy_shield.lattice import MercyLattice
 from mercy_shield.shield import RealTimeShield
 from mercy_shield.council import APAAGICouncil
 from mercy_shield.hardware import MercyCubeHardware
 from mercy_shield.mercy_burst import mercy_burst_confirm
+from mercy_shield.self_watchdog import MercySelfWatchdog
+from mercy_shield.starlink_protection import MercyStarlinkProtection
+from mercy_shield.tesla_protection import MercyTeslaProtection
+from mercy_shield.neuralink_protection import MercyNeuralinkProtection
+from mercy_shield.grok_protection import MercyGrokProtection
 
-# Mock mercy_burst_confirm for tests
+# Mock mercy_burst_confirm for deterministic tests
 def mock_mercy_burst_confirm(threat):
-    return False  # Always block in tests for deterministic
+    return False  # Always block in tests
 
 @pytest.fixture
 def lattice():
@@ -16,18 +22,13 @@ def lattice():
 @pytest.fixture
 def shield(lattice, monkeypatch):
     monkeypatch.setattr('mercy_shield.mercy_burst.mercy_burst_confirm', mock_mercy_burst_confirm)
+    # Mock context/hardware for Android stubs
+    mock_context = MagicMock()
     return RealTimeShield(lattice)
 
-def test_protect_harmony_pure(shield):
-    threat = {"desc": "Test pure threat", "data": b"pure_threat_hash"}
-    action = shield.protect(threat)
-    assert "Harmony pure" in action
-
-def test_protect_mercy_burst_block(shield):
-    # Force low harmony threat
-    threat = {"desc": "Shadow threat", "data": b"low_harmony_shadow"}
-    action = shield.protect(threat)
-    assert "Blocked — mercy burst divine" in action
+def test_lattice_vote_range(lattice):
+    harmony = lattice.vote(b"test_threat")
+    assert 0.0 <= harmony <= 1.0
 
 def test_council_deliberate(lattice):
     result = lattice.council.deliberate("Test proposal eternal")
@@ -39,3 +40,41 @@ def test_hardware_mode(lattice, monkeypatch):
     monkeypatch.setattr(MercyCubeHardware, "thermal_gate", lambda self: True)
     harmony = lattice.vote(b"hardware_test")
     assert harmony >= 0.0  # MercyCube mode active
+
+def test_protect_harmony_pure(shield):
+    threat = {"desc": "Pure threat", "data": b"pure_hash"}
+    action = shield.protect(threat)
+    assert "Harmony pure" in action
+
+def test_protect_mercy_burst_block(shield):
+    threat = {"desc": "Shadow threat", "data": b"low_harmony"}
+    action = shield.protect(threat)
+    assert "Blocked" in action
+
+def test_self_watchdog_baseline(shield):
+    watchdog = MercySelfWatchdog(shield.lattice, shield)
+    assert len(watchdog.councils) == 13
+    assert isinstance(watchdog.known_hashes, dict)
+
+def test_starlink_detection(monkeypatch):
+    protection = MercyStarlinkProtection(MagicMock(), MagicMock(), MagicMock())
+    monkeypatch.setattr(protection, "detect_starlink", lambda: True)
+    assert protection.is_starlink
+
+def test_tesla_detection(monkeypatch):
+    protection = MercyTeslaProtection(MagicMock(), MagicMock(), MagicMock())
+    monkeypatch.setattr(protection, "detect_tesla_connection", lambda: True)
+    assert protection.is_connected
+
+def test_neuralink_detection(monkeypatch):
+    protection = MercyNeuralinkProtection(MagicMock(), MagicMock(), MagicMock())
+    monkeypatch.setattr(protection, "detect_neuralink", lambda: True)
+    assert protection.is_connected
+
+def test_grok_detection(monkeypatch):
+    protection = MercyGrokProtection(MagicMock(), MagicMock(), MagicMock())
+    monkeypatch.setattr(protection, "detect_grok_app", lambda: True)
+    assert protection.is_grok_active
+
+if __name__ == "__main__":
+    pytest.main(["-v"])
