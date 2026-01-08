@@ -22,7 +22,8 @@ class MercyApp(App):
 
         # Title + icon
         title_box = BoxLayout(orientation='horizontal', size_hint_y=0.2)
-        title_box.add_widget(Image(source='mercy_icon.png'))  # Future icon
+        # Future: mercy_icon.png in assets
+        title_box.add_widget(Image(source='data/mercy_icon.png')) if os.path.exists('data/mercy_icon.png') else title_box.add_widget(Label(text="🛡️"))
         title_box.add_widget(Label(text="MercyShield v0.1-Pinnacle", font_size=28))
         layout.add_widget(title_box)
 
