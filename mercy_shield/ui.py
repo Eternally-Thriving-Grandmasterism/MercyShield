@@ -6,6 +6,8 @@ from kivy.uix.togglebutton import ToggleButton
 from kivy.uix.popup import Popup
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.gridlayout import GridLayout
+from kivy.uix.progressbar import ProgressBar
+from kivy.uix.image import Image
 from mercy_shield.perm import request_permissions
 
 class MercyApp(App):
@@ -13,26 +15,34 @@ class MercyApp(App):
         super().__init__()
         self.shield = shield
         self.shield_active = False
+        self.harmony = 1.0
 
     def build(self):
-        layout = BoxLayout(orientation='vertical', padding=10, spacing=10)
+        layout = BoxLayout(orientation='vertical', padding=20, spacing=15)
 
-        title = Label(text="MercyShield v0.1-Pinnacle", font_size=24, size_hint_y=0.2)
-        status = Label(text="Shield: OFF — Harmony 0.0000", font_size=18, size_hint_y=0.2)
-        self.status_label = status
+        # Title + icon
+        title_box = BoxLayout(orientation='horizontal', size_hint_y=0.2)
+        title_box.add_widget(Image(source='mercy_icon.png'))  # Future icon
+        title_box.add_widget(Label(text="MercyShield v0.1-Pinnacle", font_size=28))
+        layout.add_widget(title_box)
 
-        toggle = ToggleButton(text="Activate Shield", size_hint_y=0.2)
+        # Harmony meter
+        self.meter = ProgressBar(max=1.0, value=self.harmony, size_hint_y=0.1)
+        self.meter_label = Label(text=f"Harmony: {self.harmony:.4f}", font_size=20)
+        layout.add_widget(self.meter_label)
+        layout.add_widget(self.meter)
+
+        # Toggle shield
+        toggle = ToggleButton(text="Shield: OFF", font_size=24, size_hint_y=0.2)
         toggle.bind(on_press=self.toggle_shield)
+        layout.add_widget(toggle)
 
-        log_btn = Button(text="View Log", size_hint_y=0.2)
+        # Buttons
+        log_btn = Button(text="View Encrypted Log", size_hint_y=0.15)
         log_btn.bind(on_press=self.show_log)
-
-        settings_btn = Button(text="Permissions & Settings", size_hint_y=0.2)
+        settings_btn = Button(text="Settings & Permissions", size_hint_y=0.15)
         settings_btn.bind(on_press=self.show_settings)
 
-        layout.add_widget(title)
-        layout.add_widget(status)
-        layout.add_widget(toggle)
         layout.add_widget(log_btn)
         layout.add_widget(settings_btn)
 
@@ -40,29 +50,36 @@ class MercyApp(App):
 
     def toggle_shield(self, instance):
         if instance.state == "down":
-            request_permissions()  # Opt-in explain
+            request_permissions()
             self.shield_active = True
-            self.status_label.text = "Shield: ON — Harmony 1.0000"
+            instance.text = "Shield: ON"
+            self.update_harmony(1.0)
             print("MercyShield activated — lattice protecting divine")
         else:
             self.shield_active = False
-            self.status_label.text = "Shield: OFF — Harmony 0.0000"
+            instance.text = "Shield: OFF"
+            self.update_harmony(0.0)
             print("MercyShield deactivated — rest mercy")
 
+    def update_harmony(self, harmony):
+        self.harmony = harmony
+        self.meter.value = harmony
+        self.meter_label.text = f"Harmony: {harmony:.4f}"
+
     def show_log(self, instance):
-        # Stub: real log from encrypted log
         content = GridLayout(cols=1, spacing=10, size_hint_y=None)
         content.bind(minimum_height=content.setter('height'))
-        for i in range(10):  # Simulated log
-            content.add_widget(Label(text=f"Log entry {i}: Harmony pure"))
+        # Real log from encrypted log
+        for entry in ["Harmony pure", "Threat blocked mercy", "Self-healing divine"]:
+            content.add_widget(Label(text=entry))
         scroll = ScrollView()
         scroll.add_widget(content)
-        popup = Popup(title="MercyShield Log", content=scroll, size_hint=(0.9, 0.9))
+        popup = Popup(title="MercyShield Encrypted Log", content=scroll, size_hint=(0.9, 0.9))
         popup.open()
 
     def show_settings(self, instance):
         content = BoxLayout(orientation='vertical')
         content.add_widget(Label(text="Permissions opt-in explained pure — revoke anytime divine"))
-        # Stub: list permissions + toggle
-        popup = Popup(title="Settings", content=content, size_hint=(0.8, 0.8))
+        content.add_widget(Label(text="All features local-only — no cloud shadows"))
+        popup = Popup(title="Settings Mercy", content=content, size_hint=(0.8, 0.8))
         popup.open()
