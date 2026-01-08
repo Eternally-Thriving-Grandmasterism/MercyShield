@@ -1,0 +1,14 @@
+import json
+import base64
+from dilithium_py.ml_dsa import ML_DSA_65  # From app's dilithium_py
+
+# Paste exported JSON
+attest = json.loads('your_exported_json')
+
+sig_b64 = attest.pop('signature')
+sig = base64.b64decode(sig_b64)
+pubkey = bytes.fromhex(attest['device_pubkey'])  # From first entry or Chamber QR
+
+canon = json.dumps(attest, separators=(',', ':')).encode()
+verified = ML_DSA_65.verify(pubkey, canon, sig)
+print("PQC Signature Verified:", verified)  # True = quantum-sealed pure
