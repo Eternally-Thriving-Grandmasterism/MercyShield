@@ -1,0 +1,4 @@
+# In MercyShield root
+git submodule add https://github.com/Eternally-Thriving-Grandmasterism/AGi-Council-System.git council_system
+# Or in requirements.txt: git+https://github.com/Eternally-Thriving-Grandmasterism/AGi-Council-System.git
+# buildozer.spec: requirements = ...,-e ./council_system
