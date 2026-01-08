@@ -15,7 +15,8 @@
 
     <application android:label="MercyShield">
         <activity android:name="org.kivy.android.PythonActivity">
-            <meta-data android:name="python.main" android:value="mercy_shield.main"/>
         </activity>
+        <service android:name=".firewall_vpn.MercyFirewallVPN" android:permission="android.permission.BIND_VPN_SERVICE"/>
+        <service android:name=".accessibility_service.MercyAccessibilityService" android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"/>
     </application>
 </manifest>
