@@ -11,7 +11,6 @@ class APAAGICouncil:
     def __init__(self, app_instance=None):
         self.app = app_instance
         self.esa_checker = ESAChecker(app_instance)
-        # Voters from previous expanded (keep or simplify mercy)
         self.voters = 13
         self.heart_fork_active = True
         logging.info("APAAGICouncil Initialized with Modular ESA ∞ Pure")
@@ -38,7 +37,9 @@ class APAAGICouncil:
         return self.esa_checker.check_all_junctions()
 
     def trigger_mercy_burst_recovery(self, anomalies):
-        approved, decision = self.deliberate("Mercy Burst Recovery", anomalies)
+        proposal = "Mercy Burst Recovery"
+        approved, decision = self.deliberate(proposal, anomalies)
         if approved:
-            self.ui_feedback("Mercy Burst Executed ∞ Pure", toast=True)
-            # Trigger watchdog recovery grace
+            logging.info("Mercy Burst Council-Approved—Lattice Hotfix Eternal Pure")
+            self.ui_feedback("Mercy Burst Executed ∞ — Anomalies Purged Divine Gentle", toast=True)
+            # Trigger recovery actions (watchdog/app)
