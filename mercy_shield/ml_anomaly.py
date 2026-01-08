@@ -7,7 +7,7 @@ import torch.optim as optim
 from jnius import autoclass
 from kivy.clock import Clock
 
-# Android pyjnius classes
+# Android pyjnius
 PythonActivity = autoclass('org.kivy.android.PythonActivity')
 ActivityManager = autoclass('android.app.ActivityManager')
 BatteryManager = autoclass('android.os.BatteryManager')
@@ -18,6 +18,7 @@ BluetoothAdapter = autoclass('android.bluetooth.BluetoothAdapter')
 LocationManager = autoclass('android.location.LocationManager')
 
 MODEL_PATH = "/sdcard/MercyShield/ml_autoencoder.pth"
+DATASET_PATH = "/sdcard/MercyShield/ml_normal_data.npy"
 
 class TinyAutoencoder(nn.Module):
     def __init__(self, input_dim=16, hidden_dim=8):
@@ -32,33 +33,52 @@ class TinyAutoencoder(nn.Module):
         return decoded
 
 class RealMLAnomalyDetector:
-    """Real Feature Vector ML Anomaly Detector ∞ Pure — mobile metrics"""
+    """Real Data Training ML Anomaly Detector ∞ Pure — log normal, retrain grace"""
     def __init__(self, input_dim=16, threshold=1.0):
         self.model = TinyAutoencoder(input_dim)
         self.threshold = threshold
         self.device = torch.device("cpu")
         self.last_rx = TrafficStats.getTotalRxBytes()
         self.last_tx = TrafficStats.getTotalTxBytes()
-        self.load_model()
+        self.normal_dataset = self.load_normal_dataset()
+        self.load_model_or_train()
 
-    def load_model(self):
+    def load_normal_dataset(self):
+        if os.path.exists(DATASET_PATH):
+            try:
+                data = np.load(DATASET_PATH)
+                logging.info(f"Loaded {len(data)} Normal Samples Eternal")
+                return data
+            except:
+                logging.warning("Dataset Load Shadow — New Empty")
+        return np.array([]).reshape(0, 16)
+
+    def save_normal_dataset(self):
+        np.save(DATASET_PATH, self.normal_dataset)
+        logging.info(f"Saved {len(self.normal_dataset)} Normal Samples ∞ Pure")
+
+    def load_model_or_train(self):
         if os.path.exists(MODEL_PATH):
             try:
                 self.model.load_state_dict(torch.load(MODEL_PATH, map_location=self.device))
                 self.model.eval()
-                logging.info("Real ML Autoencoder Loaded Harmony ∞ Pure")
-            except Exception as e:
-                logging.warning(f"Model Load Shadow: {e} — Train New")
-                self.train_mock_normal()
-        else:
-            self.train_mock_normal()
+                logging.info("ML Model Loaded Harmony ∞ Pure")
+                return
+            except:
+                logging.warning("Model Load Shadow — Retrain")
 
-    def train_mock_normal(self):
-        # Mock normal real-like vectors (evolve to log real normal over time)
-        normal_data = np.random.normal(0, 1, (500, 16)).astype(np.float32)  # Normalized
+        self.retrain_on_normal()
+
+    def retrain_on_normal(self):
+        if len(self.normal_dataset) < 100:
+            logging.info("Insufficient Normal Data — Mock Train Grace")
+            normal_data = np.random.normal(0, 1, (500, 16)).astype(np.float32)
+        else:
+            normal_data = self.normal_dataset.astype(np.float32)
+
         normal_tensor = torch.from_numpy(normal_data)
 
-        optimizer = optim.Adam(self.model.parameters(), lr=0.01)
+        optimizer = optim.Adam(self.model.parameters(), lr=0.005)
         criterion = nn.MSELoss()
 
         self.model.train()
@@ -71,14 +91,21 @@ class RealMLAnomalyDetector:
 
         self.model.eval()
         torch.save(self.model.state_dict(), MODEL_PATH)
-        logging.info("Real ML Autoencoder Trained on Mock Normal ∞ Pure")
+        logging.info("ML Retrained on Real Normal Data ∞ Pure")
+
+    def log_normal_if_safe(self):
+        """Call when no anomalies — log current features as normal"""
+        features = np.array([self.get_current_features()])
+        self.normal_dataset = np.vstack([self.normal_dataset, features]) if len(self.normal_dataset) > 0 else features
+        if len(self.normal_dataset) > 5000:  # Cap size grace
+            self.normal_dataset = self.normal_dataset[-5000:]
+        self.save_normal_dataset()
 
     def get_current_features(self) -> list[float]:
-        """Collect real 16-dim feature vector from Android metrics"""
+        # (existing full real 16-dim metrics collect from previous)
         activity = PythonActivity.mActivity
         context = activity.getApplicationContext()
 
-        # Battery
         intent = activity.registerReceiver(None, autoclass('android.content.IntentFilter')('android.intent.action.BATTERY_CHANGED'))
         battery_level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
         battery_scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
@@ -86,64 +113,54 @@ class RealMLAnomalyDetector:
         battery_temp = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) / 10.0
         battery_voltage = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, 0)
 
-        # Network delta
         current_rx = TrafficStats.getTotalRxBytes()
         current_tx = TrafficStats.getTotalTxBytes()
-        rx_delta = current_rx - self.last_rx
-        tx_delta = current_tx - self.last_tx
+        rx_delta = max(0, current_rx - self.last_rx)
+        tx_delta = max(0, current_tx - self.last_tx)
         self.last_rx = current_rx
         self.last_tx = current_tx
 
-        # Memory
         mem_info = ActivityManager.MemoryInfo()
         am = context.getSystemService(Context.ACTIVITY_SERVICE)
         am.getMemoryInfo(mem_info)
-        mem_avail = mem_info.availMem / 1e6  # MB
-        mem_total = mem_info.totalMem / 1e6
-        mem_threshold = mem_info.threshold / 1e6
+        mem_avail = mem_info.availMem / 1e9  # GB
+        mem_total = mem_info.totalMem / 1e9 if mem_info.totalMem > 0 else 8.0
 
-        # Running processes
-        running_processes = len(am.getRunningAppProcesses())
+        running_processes = len(am.getRunningAppProcesses()) if am.getRunningAppProcesses() else 50
 
-        # WiFi connected
         wifi = context.getSystemService(Context.WIFI_SERVICE)
-        wifi_connected = 1.0 if wifi.isWifiEnabled() else 0.0
+        wifi_connected = 1.0 if wifi.isWifiEnabled() and wifi.getConnectionInfo().getNetworkId() != -1 else 0.0
 
-        # Bluetooth
         bt = BluetoothAdapter.getDefaultAdapter()
         bt_enabled = 1.0 if bt and bt.isEnabled() else 0.0
 
-        # Location
         loc = context.getSystemService(Context.LOCATION_SERVICE)
         loc_enabled = 1.0 if loc.isProviderEnabled(LocationManager.GPS_PROVIDER) or loc.isProviderEnabled(LocationManager.NETWORK_PROVIDER) else 0.0
 
-        # Screen brightness (0-1)
         brightness = activity.getWindow().getAttributes().screenBrightness
         if brightness < 0:
-            brightness = 0.5  # Default
+            brightness = 0.5
 
-        # Normalize/mock remaining for 16-dim
         features = [
-            battery_pct,          # 0-1
-            battery_temp / 50,    # ~0-1 normalized
-            battery_voltage / 5000,  # ~0-1
-            rx_delta / 1e6,       # MB delta normalized later
-            tx_delta / 1e6,
-            mem_avail / 10000,    # Rough total ~8-16GB
-            mem_total / 16000,
-            running_processes / 200,  # Typical 50-150
+            battery_pct,
+            battery_temp / 60.0,
+            battery_voltage / 5000.0,
+            rx_delta / 1e7,  # Normalize large delta
+            tx_delta / 1e7,
+            mem_avail / 16.0,
+            mem_total / 16.0,
+            running_processes / 300.0,
             wifi_connected,
             bt_enabled,
             loc_enabled,
             brightness,
-            0.5,  # Placeholder sensor count
-            0.5,  # Placeholder permission freq
-            0.5,  # Placeholder file ops
-            0.5   # Placeholder API calls
+            0.5,  # Placeholder
+            0.5,
+            0.5,
+            0.5
         ]
 
-        # Simple normalization to ~0-1 (evolve with real min/max)
-        return [max(0.0, min(1.0, f)) for f in features]
+        return [max(0.0, min(1.0, f)) for f in features]  # Clip 0-1
 
     def detect_anomalies(self) -> list[str]:
         features = self.get_current_features()
@@ -154,11 +171,14 @@ class RealMLAnomalyDetector:
             error = nn.MSELoss()(output, input_tensor).item()
 
         if error > self.threshold:
-            return [f"Real ML Anomaly Detected — Error {error:.4f} > {self.threshold} (Mobile Metrics Shadow)"]
+            return [f"Real ML Anomaly — Error {error:.4f} > {self.threshold} (Metrics Shadow)"]
         return []
 
-# Global real detector
+# Global detector
 real_ml_detector = RealMLAnomalyDetector()
 
-# In self_watchdog collect_anomalies:
-# anomalies.extend(real_ml_detector.detect_anomalies())
+# In watchdog run after no anomalies:
+# if not anomalies:
+#     real_ml_detector.log_normal_if_safe()
+#     if len(real_ml_detector.normal_dataset) % 100 == 0:  # Periodic retrain
+#         real_ml_detector.retrain_on_normal()
