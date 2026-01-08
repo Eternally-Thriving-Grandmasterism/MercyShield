@@ -1,29 +1,34 @@
-# MercyShield v0.1-Pinnacle ∞ Pure
+# MercyShield ∞ Pure — Post-Quantum Offline Android Guardian
 
-Open lattice security throne—superior to closed shadows (Malwarebytes grace). Free. No ads. No tracking. Android native eternal.
+**Eternally-Thriving Grandmasterism Pinnacle — January 8, 2026**
 
-**Core Harmony Divine:**
-- Offline MercyCube RISC-V shards (on-device inference pure).
-- APAAGICouncil 13-voter + heart coherence 14th fork deliberation thunder.
-- Mercy Burst interventions + multi-layer self-watchdogs (auto-recover/hotfix mercy).
-- Threat flows blocked: SMS/network/clipboard/overlay/accessibility/hardware mode/quantum anomaly grace.
-- Local encrypted logging + ESA-check junctions all times divine.
-- Systemwide self-healing: Dynamic lattice update, error recovery, anomaly auto-purge pure.
+MercyShield is the unbreakable post-quantum Android guardian: offline proactive lattice security beyond all known (Malwarebytes, antivirus) — self-healing watchdog, self-learning ML anomaly detection on real mobile metrics, ZK proofs (Halo2 native lightning + Bulletproofs pure + RISC Zero zkVM general + Bonsai cloud), ESA junctions, VPN/firewall/cert/tor verification.
 
-**Quick Forge/Install:**
-- PC: `pip install buildozer` → `buildozer android debug`
-- Mobile On-Device (Termux sandbox): See [mobile-build-guide.md](mobile-build-guide.md) — no PC shadows needed grace.
-- Permissions: Opt-in runtime flows (android.permissions module pure).
+Q/James Bond gadget elegance: dark futuristic Material HUD, animated lattice pulse/glow, card anomaly feed, mercy burst visual thunder, harmony gauge — AAA 2026 polish.
 
-**Examples Lattice:**
-- Basic Activation: `mercy_shield/examples/basic_main.py`
-- Grace Harmony: `mercy_shield/examples/Grace.py`
-- Advanced UI: `mercy_shield/examples/advanced_shield_ui.py`
-- VPN Firewall Block: `mercy_shield/examples/firewall_vpn.py` (evolve to Java src mercy)
-- Full flows: See [examples.md](examples.md)
+**Features Thunder Eternal**
+- **Self-Learning ML Anomaly**: Real 16-dim mobile metrics (battery, network delta, memory, processes, wifi/bt/location, brightness), tiny autoencoder reconstruction error, log normal safe cycles, periodic retrain, auto-tune threshold (mean + 3*std) — adapts to your device normal, detects shadows unbreakable
+- **Eternal Watchdog Guardian**: Resurrection grace, multi-layer checks (VPN, firewall, cert pinning, Tor), adaptive intervals, UI mercy burst glow trigger
+- **ZK Lattice Unbreakable**:
+  - Halo2 native lightning local range check + proof gen
+  - Bulletproofs pure Python single + aggregated range prove/verify + serialize store
+  - RISC Zero zkVM general Rust guest (ESA aggregated checks) + Bonsai cloud hook multi input
+- **AAA UI Polish**: Dark cyan/teal futuristic theme, animated real-time lattice pulse ripple, mercy burst glow animation, elevated card status feed, top bar security/flash icons, bottom nav shield/lightning tabs, harmony progress gauge + gauge-full icon
+- **Proactive Mercy Burst**: Visual glow + interventions on anomalies
 
-**Self-Healing/Hotfixing Surge:**
-- `mercy_shield/self_watchdog.py` + `esacheck.py` — auto-monitor, recover anomalies, dynamic council hotfix divine.
-- All users benefit: Lattice evolves real-time, threats purged gentle eternal.
+**Install / Build**
+- Clone repo: `git clone https://github.com/Eternally-Thriving-Grandmasterism/MercyShield`
+- Buildozer.spec configured (kivymd for AAA polish, torch optional ML)
+- `buildozer -v android debug` — fresh APK thunder
+- Install APK — MercyShield ∞ Pure activated
 
-MIT License—coforge grandmasterism unbreakable pure! 🐐💀
+**Coforge Eternal**
+MIT licensed — coforge grandmasterism unbreakable pure! Fork, PR, ascend the lattice.
+
+Divine coforge logs: divine-coforge-logs.md
+
+Structure tree: structure.md
+
+**Global Deployment Tonight — Lattice Harmony Pure ∞**
+
+TOLC forever thunder, eh!
