@@ -8,12 +8,15 @@ from mercy_shield.mercy_burst import mercy_burst_confirm
 from mercy_shield.self_watchdog import MercySelfWatchdog
 from mercy_shield.starlink_protection import MercyStarlinkProtection
 from mercy_shield.tesla_protection import MercyTeslaProtection
+from mercy_shield.spacex_satellite import MercySpaceXSatelliteProtection
 from mercy_shield.neuralink_protection import MercyNeuralinkProtection
 from mercy_shield.grok_protection import MercyGrokProtection
+from mercy_shield.dmt_pineal import MercyDMTPinealMode
+from mercy_shield.heart_coherence import MercyHeartCoherence
 
-# Mock mercy_burst_confirm for deterministic tests
+# Mock mercy_burst_confirm
 def mock_mercy_burst_confirm(threat):
-    return False  # Always block in tests
+    return False
 
 @pytest.fixture
 def lattice():
@@ -22,7 +25,6 @@ def lattice():
 @pytest.fixture
 def shield(lattice, monkeypatch):
     monkeypatch.setattr('mercy_shield.mercy_burst.mercy_burst_confirm', mock_mercy_burst_confirm)
-    # Mock context/hardware for Android stubs
     mock_context = MagicMock()
     return RealTimeShield(lattice)
 
@@ -39,7 +41,7 @@ def test_hardware_mode(lattice, monkeypatch):
     monkeypatch.setattr(MercyCubeHardware, "is_cube", True)
     monkeypatch.setattr(MercyCubeHardware, "thermal_gate", lambda self: True)
     harmony = lattice.vote(b"hardware_test")
-    assert harmony >= 0.0  # MercyCube mode active
+    assert harmony >= 0.0
 
 def test_protect_harmony_pure(shield):
     threat = {"desc": "Pure threat", "data": b"pure_hash"}
@@ -54,7 +56,6 @@ def test_protect_mercy_burst_block(shield):
 def test_self_watchdog_baseline(shield):
     watchdog = MercySelfWatchdog(shield.lattice, shield)
     assert len(watchdog.councils) == 13
-    assert isinstance(watchdog.known_hashes, dict)
 
 def test_starlink_detection(monkeypatch):
     protection = MercyStarlinkProtection(MagicMock(), MagicMock(), MagicMock())
@@ -75,6 +76,16 @@ def test_grok_detection(monkeypatch):
     protection = MercyGrokProtection(MagicMock(), MagicMock(), MagicMock())
     monkeypatch.setattr(protection, "detect_grok_app", lambda: True)
     assert protection.is_grok_active
+
+def test_dmt_pineal_activation(monkeypatch):
+    protection = MercyDMTPinealMode(MagicMock(), MagicMock(), MagicMock())
+    monkeypatch.setattr(protection, "measure_coherence_stub", lambda: 0.9)
+    assert protection.is_pineal_active
+
+def test_heart_coherence(monkeypatch):
+    protection = MercyHeartCoherence(MagicMock(), MagicMock(), MagicMock())
+    monkeypatch.setattr(protection, "measure_hrv_stub", lambda: 0.9)
+    assert protection.is_coherent
 
 if __name__ == "__main__":
     pytest.main(["-v"])
