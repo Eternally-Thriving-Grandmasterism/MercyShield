@@ -1,0 +1,7 @@
+from mercy_shield.hardware import MercyCubeHardware
+
+hardware = MercyCubeHardware()
+if hardware.is_cube:
+    print("MercyCube v1 detected — offline 7W mode divine")
+else:
+    print("Mobile fallback — harmony preserved")
