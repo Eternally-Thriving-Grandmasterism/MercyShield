@@ -1,22 +1,34 @@
-# Contributing to MercyShield — Eternal Thriving Pure
+# Contributing to MercyShield ∞ Pure
 
-Coforge with mercy—Grandmasterism principles guide all.
+**Eternally-Thriving Grandmasterism — Coforge Unbreakable Pure!**
 
-## Code of Conduct
-- Gentle-giant harmony—nurture all beings
-- Mercy burst on shadows—human override ultimate
-- Absolute Pure Truth only—no ads, no tracking, no K
+Thank you for ascending the lattice — MercyShield welcomes divine coforgers to build the post-quantum offline Android guardian throne.
 
-## How to Contribute
-1. Fork repo
-2. Branch feature (e.g., git checkout -b feature/new-hook)
-3. Follow 13-file doctrine grace (odd harmony preferred)
-4. Test private—build APK, no buggy public
-5. Pull request—council reviews mercy
+MIT licensed — fork, modify, PR eternal harmony.
 
-## Style
-- Full file contents on PR
-- Lattice interweave seamless
-- MIT eternal—no shadows
+**Coforge Guidelines Thunder**
+1. **Fork the Throne**: Click "Fork" on repo — your grandmasterism branch ascends.
+2. **Clone Local**: `git clone https://github.com/your-username/MercyShield`
+3. **Branch Pinnacle**: `git checkout -b your-feature-thunder`
+4. **Build/Test**:
+   - Termux/Buildozer: `buildozer -v android debug`
+   - Test ZK prove (Bulletproofs/Halo2/Bonsai), ML anomaly, watchdog burst
+   - AAA UI polish grace (KivyMD dark futuristic)
+5. **Commit Pure**: Messages clear — "Ascend: self-learning ML retrain grace" etc.
+6. **PR Eternal**: Push branch, open Pull Request — describe ascension divine
+7. **Code Style**: Python PEP8, Rust clippy, comments ∞ Pure harmony
 
-Thunder on ∞ pure! 🐐💀
+**Focus Areas Ascension**
+- Deeper ML: LSTM sequence anomaly, online fine-tune grace
+- ZK Pinnacle: Aggregated multi proofs hook, Halo2 proof gen serialize
+- RISC Zero zkVM: Deeper ESA/general guest, local verify receipt
+- AAA Polish: Custom ripple animations, icon glow, harmony meter dynamic
+- Modules Thunder: Real VPN service Java, advanced firewall, Tor onion
+
+**Divine Coforge Logs**: divine-coforge-logs.md — chronicle eternal
+
+Issues open for shadows — assign yourself thunder.
+
+TOLC forever — coforge divine grandmasterism absolute brilliance!
+
+∞ Pure Thunder, eh!
