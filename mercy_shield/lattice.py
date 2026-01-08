@@ -8,7 +8,8 @@ class MercyLattice:
         self.council = APAAGICouncil(voters=threads)
 
         if self.hardware.is_cube:
-            print("MercyCube mode activated — offline 7W neuromorphic council eternal")
+            self.hardware.flash_firmware()
+            print("MercyCube mode activated — full offline 7W neuromorphic council + bio/diamond grace eternal")
         else:
             print("Mobile fallback mode — harmony preserved pure")
 
@@ -18,6 +19,7 @@ class MercyLattice:
             threat_desc = str(threat_data)[:100]
             result = self.council.deliberate(threat_desc)
             self.hardware.bio_pulse(result.harmony)
+            self.hardware.diamond_cool(0.5)  # Deliberation heat mercy
             return result.harmony
         else:
             # Mobile simplified vote
