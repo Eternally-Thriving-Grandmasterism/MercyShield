@@ -1,0 +1,8 @@
+from mercy_shield.shield import RealTimeShield
+from mercy_shield.lattice import MercyLattice
+
+lattice = MercyLattice(threads=13)
+shield = RealTimeShield(lattice)
+threat = {"desc": "Test anomaly", "data": b"hash"}
+action = shield.protect(threat)
+print(action)
