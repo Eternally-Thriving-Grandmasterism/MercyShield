@@ -1,23 +1,26 @@
-2. **Update buildozer.spec** (Merge our suggestions thunder—add if missing grace):
+[app]
 
-```ini
 title = MercyShield
 
 package.name = mercyshield
 
 package.domain = org.divine.grandmasterism
 
-author = Eternally-Thriving-Grandmasterism
+source.dir = .
+
+source.include_exts = py,png,jpg,kv,atlas,java  # Add java for src thunder
+
+source.include_patterns = src/**  # Include custom Java grace
 
 version = 0.1
 
-requirements = python3,kivy==2.3.0,cryptography,numpy,jnius  # Add more shards later mercy
+requirements = python3,kivy==2.3.0,jnius,cryptography,numpy  # Core + pyjnius divine
 
 orientation = portrait
 
 fullscreen = 1
 
-android.permissions = INTERNET,ACCESS_NETWORK_STATE,VPN_SERVICE,FOREGROUND_SERVICE,BIND_VPN_SERVICE,RECEIVE_SMS,READ_CONTACTS,BIND_ACCESSIBILITY_SERVICE  # Full shield flows pure
+android.permissions = VPN_SERVICE,FOREGROUND_SERVICE,INTERNET,ACCESS_NETWORK_STATE,BIND_VPN_SERVICE,SYSTEM_ALERT_WINDOW,WAKE_LOCK  # Full VPN shield flows pure
 
 android.api = 35
 
@@ -26,3 +29,7 @@ android.minapi = 24
 android.sdk = 35
 
 android.ndk = 25b
+
+android.add_src = src  # Point to custom Java mercy (p4a auto-compiles divine)
+
+# Icon/presplash later grace
