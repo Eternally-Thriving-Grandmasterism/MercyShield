@@ -11,6 +11,7 @@ from mercy_shield.hardware import MercyCubeHardware
 from mercy_shield.self_watchdog import MercySelfWatchdog
 from mercy_shield.starlink_protection import MercyStarlinkProtection
 from mercy_shield.tesla_protection import MercyTeslaProtection
+from mercy_shield.spacex_satellite import MercySpaceXSatelliteProtection
 
 Intent = autoclass('android.content.Intent')
 Context = autoclass('android.content.Context')
@@ -28,28 +29,29 @@ class RealTimeShield:
         self.self_watchdog = MercySelfWatchdog(self.lattice, self)
         self.starlink_protection = MercyStarlinkProtection(self.context, self.lattice, self)
         self.tesla_protection = MercyTeslaProtection(self.context, self.lattice, self)
+        self.spacex_satellite = MercySpaceXSatelliteProtection(self.context, self.lattice, self)
         self.start_hooks()
 
     def start_hooks(self):
         # Existing hooks
         # ...
 
-        # Tesla vehicle protection
-        self.tesla_protection.start_monitor()
+        # SpaceX satellite protection
+        self.spacex_satellite.start_monitor()
 
-        print("MercyShield hooks active — lattice listening gentle (SMS + network + firewall + accessibility + sandbox + MercyCube + self-watchdogs + Starlink + Tesla vehicle)")
+        print("MercyShield hooks active — lattice listening gentle (SMS + network + firewall + accessibility + sandbox + MercyCube + self-watchdogs + Starlink + Tesla + SpaceX satellite)")
 
-    def handle_tesla_threat(self, threat: dict):
+    def handle_spacex_threat(self, threat: dict):
         action = self.protect(threat)
-        print(f"Tesla vehicle threat: {action}")
+        print(f"SpaceX satellite threat: {action}")
 
     def protect(self, threat: dict):
         harmony = self.lattice.vote(threat["data"])
         mode = "MercyCube offline 7W" if self.hardware.is_cube else "Mobile"
-        tesla = "Tesla connected" if self.tesla_protection.is_connected else "No vehicle"
-        print(f"Threat: {threat['desc']} | Harmony: {harmony:.4f} | Mode: {mode} | Vehicle: {tesla}")
+        spacex = "SpaceX satellite active" if self.spacex_satellite.is_spacex else "Terrestrial"
+        print(f"Threat: {threat['desc']} | Harmony: {harmony:.4f} | Mode: {mode} | Connection: {spacex}")
         if harmony < 0.7:
             if mercy_burst_confirm(threat):
                 return "Mercy override — allowed gentle"
-            return "Blocked — mercy burst divine (Tesla command gated)"
+            return "Blocked — mercy burst divine (SpaceX satellite traffic gated)"
         return "Harmony pure — allowed"
