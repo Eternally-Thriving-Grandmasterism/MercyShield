@@ -1,0 +1,20 @@
+[package]
+name = "mercy_halo2"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "mercy_halo2"
+crate-type = ["cdylib"]
+
+[dependencies]
+halo2_proofs = { git = "https://github.com/zcash/halo2", tag = "v2023-04-20" }  # Stable
+halo2curves = { git = "https://github.com/zcash/halo2" }
+pasta_curves = "0.5"
+ff = "0.13"
+rand = "0.8"
+lazy_static = "1.4"
+
+[features]
+default = ["gadgets"]
+gadgets = ["halo2_proofs/gadgets"]
