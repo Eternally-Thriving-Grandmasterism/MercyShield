@@ -26,6 +26,8 @@ android.api = 35
 
 android.minapi = 24
 
+requirements = python3,kivy==2.3.0,kivymd==1.2.0,requests,pyjnius,ctypes,... (existing)
+
 android.sdk = 35
 
 android.ndk = 25b
