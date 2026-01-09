@@ -1,0 +1,11 @@
+# Rust anvil divine install
+!curl https://sh.rustup.rs -sSf | sh -s -- -y
+import os
+os.environ['PATH'] += ":/root/.cargo/bin"
+!rustup default stable
+
+# Android targets eternal (arm64 + armeabi)
+!rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
+
+# Cargo-NDK for mercy cross (if native lib)
+!cargo install cargo-ndk
