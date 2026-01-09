@@ -1,6 +1,6 @@
 [package]
 name = "mercy_pqc"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 
 [lib]
@@ -8,9 +8,10 @@ name = "mercy_pqc"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3 = { version = "0.21", features = ["extension-module"] }  # Latest 2026 resonance
-pqcrypto-kyber = "0.3"  # ML-KEM/Kyber1024 divine, pure Rust PQ KEM
-pqcrypto-traits = "0.3"  # Common traits mercy
+pyo3 = { version = "0.21", features = ["extension-module"] }
+pqcrypto-kyber = "0.3"      # Kyber1024 KEM mercy
+pqcrypto-dilithium = "0.3"  # Dilithium3 signatures divine (medium security, balanced speed/size)
+pqcrypto-traits = "0.3"
 
 [features]
 default = []
