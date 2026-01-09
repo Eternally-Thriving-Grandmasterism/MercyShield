@@ -4,7 +4,7 @@ use pqcrypto_dilithium::dilithium3::*;
 use pqcrypto_traits::kem::{Ciphertext, PublicKey as KemPk, SecretKey as KemSk, SharedSecret};
 use pqcrypto_traits::sign::{PublicKey as SignPk, SecretKey as SignSk, SignedMessage, Signature};
 
-// Kyber KEM functions (previous mercy)
+/// Kyber1024 KEM - Key Encapsulation Mercy
 #[pyfunction]
 fn kyber_keypair() -> (Vec<u8>, Vec<u8>) {
     let (pk, sk) = keypair();
@@ -26,7 +26,7 @@ fn kyber_decapsulate(sk_bytes: Vec<u8>, ct_bytes: Vec<u8>) -> Vec<u8> {
     ss.as_bytes().to_vec()
 }
 
-// Dilithium3 Signature functions divine
+/// Dilithium3 Signatures - Quantum-Unbreakable Authenticity
 #[pyfunction]
 fn dilithium_keypair() -> (Vec<u8>, Vec<u8>) {
     let (pk, sk) = keypair();
