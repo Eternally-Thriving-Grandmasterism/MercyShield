@@ -1,18 +1,13 @@
 [package]
-name = "mercy_pqc"
-version = "0.3.0"
+name = "mercy_shield_plus"
+version = "1.0.0"
 edition = "2021"
-
-[lib]
-name = "mercy_pqc"
-crate-type = ["cdylib"]
+description = "MercyShieldPlus Proprietary Quantum Fortress Rust Native Eternal ⚡️"
+license = "MIT"
 
 [dependencies]
-pyo3 = { version = "0.21", features = ["extension-module"] }
-pqcrypto-kyber = "0.3"      # Kyber1024 KEM proprietary
-pqcrypto-dilithium = "0.3"  # Dilithium3 signatures (heavy security)
-pqcrypto-falcon = "0.3"     # Falcon-512 signatures (lighter alternative, NIST additional)
-pqcrypto-traits = "0.3"
+slint = "1.6"  # UI mercy live card + bursts
+sha3 = "0.10"  # Proprietary hash (minimal external, replace hand-coded next)
 
-[features]
-default = []
+[dev-dependencies]
+# Tests mercy
