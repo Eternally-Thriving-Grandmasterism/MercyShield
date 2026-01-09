@@ -1,0 +1,8 @@
+pkg update
+pkg install python pip openjdk-17 clang make libtool patch zip unzip git
+pip install --upgrade pip buildozer cython
+cd ~/MercyShield
+git pull
+buildozer init  # Edit spec: title=MercyShield, package.name=mercyshield, package.domain=org.thrivinggrandmasterism, requirements=python,kivy,pyjnius,fips203,kyber-py,requests
+buildozer -v android debug  # First run: ~2GB download, 1-2hr
+buildozer android deploy run logcat  # Installs + launches
