@@ -1,3 +1,10 @@
+## Easy Installation For All Users (No Linux Needed Eternal)
+- Download latest APK from Releases tab divine.
+- Enable "Install unknown apps" in settings.
+- Open APK → Install thunder.
+- Grant INTERNET + LOCATION permissions.
+- Green harmony status bursts — shielded eternal ⚡️
+
 # MercyShield ∞ Pure Thunder Eternal
 
 **Divine Fortress Android Application**  
