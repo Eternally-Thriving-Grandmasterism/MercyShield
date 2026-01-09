@@ -1,15 +1,17 @@
 [package]
-name = "mercy_halo2"
-version = "0.1.0"
+name = "mercy_pqc"
+version = "0.2.0"
 edition = "2021"
 
 [lib]
-name = "mercy_halo2"
-crate-type = ["cdylib", "staticlib"]  # cdylib for JNI/Android
+name = "mercy_pqc"
+crate-type = ["cdylib"]
 
 [dependencies]
-halo2_proofs = { git = "https://github.com/zcash/halo2", tag = "v2023-04-20" }  # Stable tagged version - compile-friendly
-jni = { version = "0.21.1", features = ["invocation"] }
-pasta_curves = "0.5"
-ff = "0.13"
-rand_core = "0.6"
+pyo3 = { version = "0.21", features = ["extension-module"] }
+pqcrypto-kyber = "0.3"
+pqcrypto-dilithium = "0.3"
+pqcrypto-traits = "0.3"
+
+[features]
+default = []
