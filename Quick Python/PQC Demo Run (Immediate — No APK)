@@ -1,0 +1,3 @@
+pip install kivy fips203 kyber-py requests pyjnius
+cd ~/MercyShield
+python advanced_shield_ui.py  # Or pqc_storage.py for verification demo
