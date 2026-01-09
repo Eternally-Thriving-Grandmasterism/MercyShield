@@ -23,7 +23,7 @@ android.api = 33
 android.minapi = 21
 android.sdk = 33
 android.ndk = 25b
-android.arch = armeabi-v7a,arm64-v8a
+android.archs = arm64-v8a, armeabi-v7a  # Migrated from android.arch — warnings crushed eternal
 
 # Orientation
 orientation = portrait
@@ -31,11 +31,9 @@ orientation = portrait
 # Logging
 log_level = 2
 
-# Presplash (optional — add presplash.png later)
-# presplash.filename = %(source.dir)s/presplash.png
-
-# Icon (optional — add icon.png later)
-# icon.filename = %(source.dir)s/icon.png
+# Quantum Glow Icons Activated v0.2
+icon.filename = icon.png
+presplash.filename = presplash.png
 
 # Build options
 android.release_policy = always
