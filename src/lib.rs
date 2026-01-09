@@ -1,10 +1,11 @@
 use pyo3::prelude::*;
 use pqcrypto_kyber::kyber1024::*;
 use pqcrypto_dilithium::dilithium3::*;
+use pqcrypto_falcon::falcon512::*;
 use pqcrypto_traits::kem::{Ciphertext, PublicKey as KemPk, SecretKey as KemSk, SharedSecret};
-use pqcrypto_traits::sign::{PublicKey as SignPk, SecretKey as SignSk, SignedMessage, Signature};
+use pqcrypto_traits::sign::{PublicKey as SignPk, SecretKey as SignSk, SignedMessage, Signature, VerifyingKey};
 
-/// Kyber1024 KEM - Key Encapsulation Mercy
+/// Proprietary Kyber1024 KEM - Encapsulation Mercy
 #[pyfunction]
 fn kyber_keypair() -> (Vec<u8>, Vec<u8>) {
     let (pk, sk) = keypair();
@@ -26,7 +27,7 @@ fn kyber_decapsulate(sk_bytes: Vec<u8>, ct_bytes: Vec<u8>) -> Vec<u8> {
     ss.as_bytes().to_vec()
 }
 
-/// Dilithium3 Signatures - Quantum-Unbreakable Authenticity
+/// Proprietary Dilithium3 Signatures - Heavy Security Mercy
 #[pyfunction]
 fn dilithium_keypair() -> (Vec<u8>, Vec<u8>) {
     let (pk, sk) = keypair();
@@ -47,6 +48,27 @@ fn dilithium_verify(pk_bytes: Vec<u8>, message: Vec<u8>, signature: Vec<u8>) -> 
     verify(&signed, &message, &pk).is_ok()
 }
 
+/// Proprietary Falcon-512 Signatures - Lighter Alternative Mercy (NIST Additional)
+#[pyfunction]
+fn falcon_keypair() -> (Vec<u8>, Vec<u8>) {
+    let (pk, sk) = keypair();
+    (pk.as_bytes().to_vec(), sk.as_bytes().to_vec())
+}
+
+#[pyfunction]
+fn falcon_sign(sk_bytes: Vec<u8>, message: Vec<u8>) -> Vec<u8> {
+    let sk = SecretKey::from_bytes(&sk_bytes).unwrap();
+    let signed = sign(&message, &sk);
+    signed.as_bytes().to_vec()
+}
+
+#[pyfunction]
+fn falcon_verify(pk_bytes: Vec<u8>, message: Vec<u8>, signature: Vec<u8>) -> bool {
+    let pk = VerifyingKey::from_bytes(&pk_bytes).unwrap();
+    let signed = SignedMessage::from_bytes(&signature).unwrap();
+    open(&signed, &pk).is_ok()
+}
+
 #[pymodule]
 fn mercy_pqc(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(kyber_keypair, m)?)?;
@@ -55,5 +77,8 @@ fn mercy_pqc(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(dilithium_keypair, m)?)?;
     m.add_function(wrap_pyfunction!(dilithium_sign, m)?)?;
     m.add_function(wrap_pyfunction!(dilithium_verify, m)?)?;
+    m.add_function(wrap_pyfunction!(falcon_keypair, m)?)?;
+    m.add_function(wrap_pyfunction!(falcon_sign, m)?)?;
+    m.add_function(wrap_pyfunction!(falcon_verify, m)?)?;
     Ok(())
 }
